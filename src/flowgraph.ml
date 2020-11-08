@@ -27,8 +27,10 @@ let draw_edges graph =
         let src_node = DagreFFI.get_node graph n in
         let out_idx = find_output_idx output src_node.extra in
         let ox, oy = get_output_ancher src_node out_idx in
-        let append = Printf.sprintf "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\" class=\"default\" />" ix iy ox oy in
-        (svg ^ append, i+1)
+        let svg = svg ^ Arc.connect_horizontal "default"
+            (Js.Int.toFloat ix, Js.Int.toFloat iy)
+            (Js.Int.toFloat ox, Js.Int.toFloat oy) in
+        (svg, i+1)
         end
       | _ -> (svg, i+1)
     ) ("", 0) node.extra.inputs in

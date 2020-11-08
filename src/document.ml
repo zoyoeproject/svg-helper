@@ -21,3 +21,14 @@ external appendChild: element -> element -> unit = "appendChild" [@@bs.send]
 
 let svg_ns = "http://www.w3.org/2000/svg"
 let createElementSVG dom string = createElementNS dom svg_ns string
+
+type matrix
+type transform
+
+external createSVGMatrix : element -> matrix = "createSVGMatrix" [@@bs.send]
+external translate: matrix -> int -> int -> matrix = "createSVGMatrix" [@@bs.send]
+
+external getBaseTransform : element -> int -> transform =
+  "transform.baseVal.getItem" [@@bs.send]
+
+external setMatrix : transform -> matrix -> unit = "setMatrix" [@@bs.send]
