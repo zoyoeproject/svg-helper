@@ -3,9 +3,9 @@ open Node
 let build_edges graph nodes =
   List.iter (fun node ->
     let src = node.name in
-    Array.iter (fun input ->
-      match input with
-      | PATH (node_name, _) -> DagreFFI.add_edge graph node_name src
+    Array.iter (fun param ->
+      match param.input with
+      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
       | _ -> ()
     ) node.inputs
   ) nodes
@@ -20,10 +20,10 @@ let init_graph graph nodes =
 let draw_edges graph =
   Array.fold_left (fun svg node_name ->
     let node = DagreFFI.get_node graph node_name in
-    let edges, _ = Array.fold_left (fun (svg, i) input ->
+    let edges, _ = Array.fold_left (fun (svg, i) param ->
       let ix, iy = get_input_ancher node i in
-      match input with
-      | PATH (n, output) -> begin
+      match param.input with
+      | Some (PATH (n, output)) -> begin
         let src_node = DagreFFI.get_node graph n in
         let out_idx = find_output_idx output src_node.extra in
         let ox, oy = get_output_ancher src_node out_idx in

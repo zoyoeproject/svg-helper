@@ -1,12 +1,6 @@
 {
   "name": "svg-helper",
   "version": "1.0.0",
-  "scripts": {
-    "clean": "bsb -clean-world",
-    "bsb": "bsb",
-    "start": "webpack-dev-server"
-  },
-
   "description": "svg helper",
   "main": "index.js",
   "repository": {
@@ -20,7 +14,9 @@
   },
   "homepage": "https://github.com/zoyoeproject/svg-helper#readme",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "bsb -clean-world",
+    "bsb": "bsb",
+    "start": "webpack-dev-server"
   },
   "devDependencies": {
     "bs-platform": "^8.2.0",

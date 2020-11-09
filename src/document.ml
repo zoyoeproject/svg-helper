@@ -25,10 +25,15 @@ let createElementSVG dom string = createElementNS dom svg_ns string
 type matrix
 type transform
 
-external createSVGMatrix : element -> matrix = "createSVGMatrix" [@@bs.send]
-external translate: matrix -> int -> int -> matrix = "createSVGMatrix" [@@bs.send]
+type transform_group = {
+  animVal: transform array;
+  baseVal: transform array;
+}
 
-external getBaseTransform : element -> int -> transform =
-  "transform.baseVal.getItem" [@@bs.send]
+external createSVGMatrix : element -> matrix = "createSVGMatrix" [@@bs.send]
+external translate: matrix -> int -> int -> matrix = "translate" [@@bs.send]
+
+external transform: element -> transform_group =
+  "" [@@bs.get]
 
 external setMatrix : transform -> matrix -> unit = "setMatrix" [@@bs.send]

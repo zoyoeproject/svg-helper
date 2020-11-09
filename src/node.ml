@@ -2,18 +2,24 @@ type var =
   | VAR of string
   | PATH of string * string
 
+type param = {
+  name: string;
+  input: var option;
+}
+
 type node = {
   name: string;
-  inputs: var array;
+  inputs: param array;
   outputs: string array;
 }
 
 let mk_path a b = PATH (a,b)
 let mk_var a = VAR a
+let mk_param name input = {name = name; input = input}
 
 let mk_node name inputs outputs = {name=name; inputs=inputs; outputs=outputs}
 
-let default_node_height = 30
+let default_node_height = 40
 
 let total_sz n = (n+1)*10
 
@@ -45,17 +51,19 @@ let get_input_ancher node i =
   let x, y = node.x - w/2, node.y - h/2 in
   (x, get_ancher y h (Array.length inner.inputs) i)
 
-let draw_node node (cx, cy) =
+let draw_node (node:node) (cx, cy) =
   let (w,h) = compute_size node in
   let x1,y1 = cx - w/2, cy - h/2 in
   let x2,y2 = cx + w/2, cy + h/2 in
   let box = Printf.sprintf "<polygon points=\"%d,%d %d,%d %d,%d %d,%d\" class=\"default\"/>"
     x1 y1 x2 y1 x2 y2 x1 y2 in
-  let inputs,_ = Array.fold_left (fun (svg, i) _ ->
+  let inputs,_ = Array.fold_left (fun (svg, i) (input:param) ->
+    let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
     let anc = Printf.sprintf "<circle cx=\"%d\" cy=\"%d\" r=\"3\" class=\"default\"/>"
-      x1 (get_ancher y1 h (Array.length node.inputs) i) in
-    (svg^anc, i + 1)
-  ) ("", 0) node.inputs in
+      ax ay in
+    let text = Utils.mk_text "default" (ax + 5, ay) input.name in
+    (svg^anc^text, i + 1)
+  ) ("", 0) (node.inputs:param array) in
   let outputs,_ = Array.fold_left (fun (svg, i) _ ->
     let anc = Printf.sprintf "<circle cx=\"%d\" cy=\"%d\" r=\"3\" class=\"default\"/>"
       x2 (get_ancher y1 h (Array.length node.outputs) i) in
