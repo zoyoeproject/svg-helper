@@ -1,5 +1,5 @@
 open Node
-let demo_cfg () =
+let demo_cfg parent =
   let graph = DagreFFI.create_graph () in
   let nodes = [
     Node.mk_node "n1" [|mk_param "i1" (Some (mk_var "i"))|] [|"x";"y"|];
@@ -13,4 +13,4 @@ let demo_cfg () =
     |] [|"result"|];
   ] in
   Flowgraph.init_graph graph nodes;
-  Flowgraph.draw_graph graph
+  Flowgraph.init_flowgraph parent graph

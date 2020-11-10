@@ -22,8 +22,17 @@ external appendChild: element -> element -> unit = "appendChild" [@@bs.send]
 let svg_ns = "http://www.w3.org/2000/svg"
 let createElementSVG dom string = createElementNS dom svg_ns string
 
-type matrix
+
 type transform
+
+type matrix = {
+  a:int;
+  b:int;
+  c:int;
+  d:int;
+  e:int;
+  f:int;
+}
 
 type transform_group = {
   animVal: transform array;
@@ -32,8 +41,20 @@ type transform_group = {
 
 external createSVGMatrix : element -> matrix = "createSVGMatrix" [@@bs.send]
 external translate: matrix -> int -> int -> matrix = "translate" [@@bs.send]
+external consolidate: transform array -> transform = "consolidate" [@@bs.send]
+external appendItem: transform array -> transform -> unit = "appendItem" [@@bs.send]
+external createTransform: transform array -> matrix -> transform = "createSVGTransformFromMatrix" [@@bs.send]
 
 external transform: element -> transform_group =
   "" [@@bs.get]
 
 external setMatrix : transform -> matrix -> unit = "setMatrix" [@@bs.send]
+
+external getMatrix : transform -> matrix = "matrix" [@@bs.get]
+
+type mouse_event_info = {
+  clientX: int;
+  clientY: int;
+}
+
+external stopPropagation: mouse_event_info -> unit = "" [@@bs.send]

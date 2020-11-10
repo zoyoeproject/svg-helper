@@ -22,7 +22,7 @@ let pan_handler cb s token = match s with
     end
   | Pan (x, y) -> begin
       match token with
-      | Down _ -> raise (UnExpectedEvent "Down in Pan")
+      | Down _ -> Nothing
       | Enter _ -> Nothing
       | Up (nx, ny) -> cb (x,y) (nx, ny) true; Nothing
       | Move (nx, ny) -> cb (x,y) (nx, ny) false; Pan (nx, ny)

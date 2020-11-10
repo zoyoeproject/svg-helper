@@ -27,7 +27,7 @@ let draw_edges graph =
         let src_node = DagreFFI.get_node graph n in
         let out_idx = find_output_idx output src_node.extra in
         let ox, oy = get_output_ancher src_node out_idx in
-        let svg = svg ^ Arc.connect_horizontal "default"
+        let svg = svg ^ Arc.connect_horizontal "default-line"
             (Js.Int.toFloat ix, Js.Int.toFloat iy)
             (Js.Int.toFloat ox, Js.Int.toFloat oy) in
         (svg, i+1)
@@ -37,14 +37,16 @@ let draw_edges graph =
     svg ^ edges
   ) "" (DagreFFI.nodes graph)
 
-let draw_nodes graph =
-  Array.fold_left (fun svg node_name ->
+let draw_nodes parent graph context =
+  Array.iter (fun node_name ->
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
-    svg ^ (draw_node extra (node.x, node.y))
-  ) "" (DagreFFI.nodes graph)
+    let item = Utils.mk_group_in parent (Some node_name)
+        (draw_node extra (node.x, node.y)) in
+    Utils.init_dragdrop_item parent item context
+  ) (DagreFFI.nodes graph)
 
-let draw_graph graph =
-  (draw_nodes graph) ^ (draw_edges graph)
-
-
+let init_flowgraph parent graph =
+  let context = Utils.init_dragdrop parent in
+  draw_nodes parent graph context;
+  Utils.mk_group_in parent None (draw_edges graph)
