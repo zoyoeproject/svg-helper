@@ -28,7 +28,12 @@ let on_mouseup_set item call_back =
 let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
 
-let init_dragdrop_item parent item context =
+type dd_info = {
+  item: Document.element;
+  cb: Document.element-> unit;
+}
+
+let init_dragdrop_item parent item callback context =
   let transform = Document.transform item in
   let base_transforms = transform.baseVal in
   let matrix = Document.createSVGMatrix parent in
@@ -37,13 +42,19 @@ let init_dragdrop_item parent item context =
   Js.log @@ Array.length transform.baseVal;
 
   let handle_mouse_down _ =
-    context := Some item
+    context := Some {item = item; cb = callback}
   in
 
   let handle_mouse_up _ = () in
 
   on_mousedown_set item handle_mouse_down;
   on_mouseup_set item handle_mouse_up
+
+let get_translate_info i =
+  let transform = Document.transform i in
+  let transform = transform.baseVal.(0) in
+  let matrix = Document.getMatrix transform in
+  Document.(matrix.e, matrix.f)
 
 let init_dragdrop item =
   let pan_state = ref Event.Nothing in
@@ -59,7 +70,7 @@ let init_dragdrop item =
   let dragdrop (px, py) (cx, cy) cont =
     let i = match !context with
       | None -> Js.log "none"; item
-      | Some i -> Js.log "item"; i
+      | Some i -> i.item
     in
     let transform = Document.transform i in
     let transform = transform.baseVal.(0) in
@@ -67,6 +78,10 @@ let init_dragdrop item =
     let t = cx - px, cy - py in
     let matrix = Document.translate matrix (fst t) (snd t) in
     Document.setMatrix transform matrix;
+    let _ = match !context with
+      | Some i -> i.cb i.item
+      | _ -> ()
+    in
     if cont then context := None
   in
 

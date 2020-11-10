@@ -38,12 +38,16 @@ let draw_edges graph =
   ) "" (DagreFFI.nodes graph)
 
 let draw_nodes parent graph context =
+  let update_edges item =
+    let tsinfo = Utils.get_translate_info item in
+    Js.log tsinfo
+  in
   Array.iter (fun node_name ->
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
     let item = Utils.mk_group_in parent (Some node_name)
         (draw_node extra (node.x, node.y)) in
-    Utils.init_dragdrop_item parent item context
+    Utils.init_dragdrop_item parent item update_edges context
   ) (DagreFFI.nodes graph)
 
 let init_flowgraph parent graph =
