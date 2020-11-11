@@ -15,8 +15,8 @@ type 'a node_size = {
   label: string;
   width: int;
   height: int;
-  x: int;
-  y: int;
+  mutable x: int;
+  mutable y: int;
   extra: 'a
 }
 

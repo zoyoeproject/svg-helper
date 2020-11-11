@@ -13,6 +13,14 @@ let mk_group_in parent name svg =
   Document.appendChild parent item;
   item
 
+let set_translate_matrix parent item (x, y) =
+  let transform = Document.transform item in
+  let base_transforms = transform.baseVal in
+  let matrix = Document.createSVGMatrix parent in
+  let matrix = Document.translate matrix x y in
+  let matrix_transform = Document.createTransform base_transforms matrix in
+  Document.appendItem base_transforms matrix_transform
+
 let mk_use svgname (x, y) =
   Printf.sprintf "<use href='#%s' x='%d' y='%d' width='30' height='30'/>" svgname x y
 
@@ -34,12 +42,6 @@ type dd_info = {
 }
 
 let init_dragdrop_item parent item callback context =
-  let transform = Document.transform item in
-  let base_transforms = transform.baseVal in
-  let matrix = Document.createSVGMatrix parent in
-  let matrix_transform = Document.createTransform base_transforms matrix in
-  Document.appendItem base_transforms matrix_transform;
-  Js.log @@ Array.length transform.baseVal;
 
   let handle_mouse_down _ =
     context := Some {item = item; cb = callback}

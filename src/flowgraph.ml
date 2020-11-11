@@ -37,20 +37,24 @@ let draw_edges graph =
     svg ^ edges
   ) "" (DagreFFI.nodes graph)
 
+let update_edges graph node item =
+  let parent = Document.get_by_id Document.document "edges" in
+  let tsinfo = Utils.get_translate_info item in
+  DagreFFI.(node.x <- fst tsinfo);
+  DagreFFI.(node.y <- snd tsinfo);
+  Document.setInnerHTML parent (draw_edges graph)
+
 let draw_nodes parent graph context =
-  let update_edges item =
-    let tsinfo = Utils.get_translate_info item in
-    Js.log tsinfo
-  in
   Array.iter (fun node_name ->
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
-    let item = Utils.mk_group_in parent (Some node_name)
-        (draw_node extra (node.x, node.y)) in
-    Utils.init_dragdrop_item parent item update_edges context
+    let item = Utils.mk_group_in parent (Some node_name) (draw_node extra (0, 0)) in
+    Utils.set_translate_matrix parent item (node.x, node.y);
+    Utils.init_dragdrop_item parent item (update_edges graph node) context
   ) (DagreFFI.nodes graph)
 
 let init_flowgraph parent graph =
   let context = Utils.init_dragdrop parent in
   draw_nodes parent graph context;
-  Utils.mk_group_in parent None (draw_edges graph)
+  Utils.mk_group_in parent (Some "edges") (draw_edges graph)
+
