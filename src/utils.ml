@@ -42,7 +42,16 @@ type context_info = {
 }
 
 let set_focus context focus =
+  let _ = match !context.focus with
+    | Some (focus, _)  -> Document.setAttribute focus "class" "default"
+    | _ -> ()
+  in
   context := {!context with focus = Some focus}
+
+let get_focus context =
+  match !context.focus with
+    | Some (_, var) -> Some var
+    | _ -> None
 
 let init_dragdrop_item parent item callback context =
 

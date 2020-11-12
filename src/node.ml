@@ -4,7 +4,7 @@ type var =
 
 type param = {
   name: string;
-  input: var option;
+  mutable input: var option;
 }
 
 type node = {

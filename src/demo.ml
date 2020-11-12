@@ -7,7 +7,7 @@ let demo_cfg parent =
     Node.mk_node "n4" [|mk_param "i4" (Some (mk_var "k"))|] [|"c"|];
     Node.mk_node "n5" [|
         mk_param "x" (Some (mk_path "n2" "a"));
-        mk_param "y" (Some (mk_path "n3" "b"));
+        mk_param "y" (None);
         mk_param "z" (Some (mk_path "n4" "c"));
     |] [|"result"|];
   ] in
