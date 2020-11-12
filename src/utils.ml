@@ -58,11 +58,11 @@ let get_translate_info i =
   let matrix = Document.getMatrix transform in
   Document.(matrix.e, matrix.f)
 
-let init_dragdrop item =
+let init_dragdrop parent item =
   let pan_state = ref Event.Nothing in
   let transform = Document.transform item in
   let base_transforms = transform.baseVal in
-  let matrix = Document.createSVGMatrix item in
+  let matrix = Document.createSVGMatrix parent in
   let matrix_transform = Document.createTransform base_transforms matrix in
   Document.appendItem base_transforms matrix_transform;
   Js.log @@ Array.length transform.baseVal;
@@ -99,8 +99,8 @@ let init_dragdrop item =
     pan_state := Event.pan_handler dragdrop !pan_state (Event.Move Document.(minfo.clientX, minfo.clientY))
   in
 
-  on_mousedown_set item handle_mouse_down;
-  on_mouseup_set item handle_mouse_up;
-  on_mousemove_set item handle_mouse_move;
+  on_mousedown_set parent handle_mouse_down;
+  on_mouseup_set parent handle_mouse_up;
+  on_mousemove_set parent handle_mouse_move;
   context
 

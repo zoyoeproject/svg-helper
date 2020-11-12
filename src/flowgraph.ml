@@ -44,17 +44,20 @@ let update_edges graph node item =
   DagreFFI.(node.y <- snd tsinfo);
   Document.setInnerHTML parent (draw_edges graph)
 
-let draw_nodes parent graph context =
+let draw_nodes svgele parent graph context =
   Array.iter (fun node_name ->
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
     let item = Utils.mk_group_in parent (Some node_name) (draw_node extra (0, 0)) in
-    Utils.set_translate_matrix parent item (node.x, node.y);
-    Utils.init_dragdrop_item parent item (update_edges graph node) context
+    Utils.set_translate_matrix svgele item (node.x, node.y);
+    Utils.init_dragdrop_item svgele item (update_edges graph node) context
   ) (DagreFFI.nodes graph)
 
-let init_flowgraph parent graph =
-  let context = Utils.init_dragdrop parent in
-  draw_nodes parent graph context;
-  Utils.mk_group_in parent (Some "edges") (draw_edges graph)
+let init_flowgraph svgele nodes =
+  let graph = DagreFFI.create_graph () in
+  init_graph graph nodes;
+  let all = Utils.mk_group_in svgele (Some "all") "" in
+  let context = Utils.init_dragdrop svgele all in
+  draw_nodes svgele all graph context;
+  ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges graph)
 
