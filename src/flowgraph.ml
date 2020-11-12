@@ -44,11 +44,34 @@ let update_edges graph node item =
   DagreFFI.(node.y <- snd tsinfo);
   Document.setInnerHTML parent (draw_edges graph)
 
+let draw_node parent (node:node) =
+  let (cx, cy) = (0, 0) in
+  let (w,h) = compute_size node in
+  let x1, y1 = cx - w/2, cy - h/2 in
+  let x2, _ = cx + w/2, cy + h/2 in
+  ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
+  let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
+    let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
+    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    Utils.on_mouseclick_set circle (fun _ ->
+      Document.setAttribute circle "class" "focus"
+    );
+    let text = Utils.mk_text "default" (ax + 5, ay) input.name in
+    (svg^text, i + 1)
+  ) ("", 0) (node.inputs:param array) in
+  let txt, _ = Array.fold_left (fun (svg, i) _ ->
+    ignore @@ Circle.mk_circle_in parent "default" 3
+      (x2, (get_ancher y1 h (Array.length node.outputs) i));
+    (svg, i + 1)
+  ) (txt, 0) node.outputs in
+  ignore @@ Utils.mk_group_in parent None txt
+
 let draw_nodes svgele parent graph context =
   Array.iter (fun node_name ->
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
-    let item = Utils.mk_group_in parent (Some node_name) (draw_node extra (0, 0)) in
+    let item = Utils.mk_group_in parent (Some node_name) "" in
+    draw_node item extra;
     Utils.set_translate_matrix svgele item (node.x, node.y);
     Utils.init_dragdrop_item svgele item (update_edges graph node) context
   ) (DagreFFI.nodes graph)

@@ -24,7 +24,7 @@ let set_translate_matrix parent item (x, y) =
 let mk_use svgname (x, y) =
   Printf.sprintf "<use href='#%s' x='%d' y='%d' width='30' height='30'/>" svgname x y
 
-let on_click_set item call_back =
+let on_mouseclick_set item call_back =
   Document.add_event_listener item "click" call_back
 
 let on_mousedown_set item call_back =
@@ -36,15 +36,18 @@ let on_mouseup_set item call_back =
 let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
 
-type dd_info = {
-  item: Document.element;
-  cb: Document.element-> unit;
+type context_info = {
+  dragdrop: (Document.element * (Document.element -> unit)) option;
+  focus: (Document.element * Node.var) option;
 }
+
+let set_focus context focus =
+  context := {!context with focus = Some focus}
 
 let init_dragdrop_item parent item callback context =
 
   let handle_mouse_down _ =
-    context := Some {item = item; cb = callback}
+    context := {!context with dragdrop = Some (item, callback)}
   in
 
   let handle_mouse_up _ = () in
@@ -67,12 +70,12 @@ let init_dragdrop parent item =
   Document.appendItem base_transforms matrix_transform;
   Js.log @@ Array.length transform.baseVal;
 
-  let context = ref None in
+  let context = ref {dragdrop=None; focus=None} in
 
   let dragdrop (px, py) (cx, cy) cont =
-    let i = match !context with
+    let i = match !context.dragdrop with
       | None -> Js.log "none"; item
-      | Some i -> i.item
+      | Some (i,_) -> i
     in
     let transform = Document.transform i in
     let transform = transform.baseVal.(0) in
@@ -80,11 +83,11 @@ let init_dragdrop parent item =
     let t = cx - px, cy - py in
     let matrix = Document.translate matrix (fst t) (snd t) in
     Document.setMatrix transform matrix;
-    let _ = match !context with
-      | Some i -> i.cb i.item
+    let _ = match !context.dragdrop with
+      | Some (item, cb) -> cb item
       | _ -> ()
     in
-    if cont then context := None
+    if cont then context := {!context with dragdrop=None}
   in
 
   let handle_mouse_down minfo =
