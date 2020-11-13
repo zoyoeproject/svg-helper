@@ -1,4 +1,5 @@
 open Node
+let input_padding = 3
 
 let build_edges graph nodes =
   List.iter (fun node ->
@@ -30,6 +31,13 @@ let draw_edges graph =
         let svg = svg ^ Arc.connect_horizontal "default-line"
             (Js.Int.toFloat ix, Js.Int.toFloat iy)
             (Js.Int.toFloat ox, Js.Int.toFloat oy) in
+        (svg, i+1)
+        end
+      | Some (VAR n)-> begin
+        let svg = svg ^ Arc.connect_horizontal "default-line"
+            (Js.Int.toFloat (ix - 30), Js.Int.toFloat iy)
+            (Js.Int.toFloat ix, Js.Int.toFloat iy) in
+        let svg = svg ^ Utils.mk_text "default" (ix-30, iy-input_padding) n in
         (svg, i+1)
         end
       | _ -> (svg, i+1)

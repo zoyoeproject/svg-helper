@@ -35,8 +35,8 @@ let empty = {
   width=100;
   height=100;
   rankdir="LR";
-  marginx=10;
-  marginy=10;
+  marginx=40;
+  marginy=40;
 }
 
 type edge_label = {
