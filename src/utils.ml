@@ -38,7 +38,7 @@ let on_mousemove_set item call_back =
 
 type context_info = {
   dragdrop: (Document.element * (Document.element -> unit)) option;
-  focus: (Document.element * Node.var) option;
+  focus: (Document.element * (Node.var * Constr.t)) option;
 }
 
 let set_focus context focus =
@@ -53,7 +53,7 @@ let get_focus context =
     | Some (_, var) -> Some var
     | _ -> None
 
-let init_dragdrop_item parent item callback context =
+let init_dragdrop_item _ (*parent*) item callback context =
 
   let handle_mouse_down _ =
     context := {!context with dragdrop = Some (item, callback)}

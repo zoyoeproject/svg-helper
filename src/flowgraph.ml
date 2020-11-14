@@ -61,11 +61,17 @@ let draw_node graph context parent (node:node) =
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
     let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
-    let text = Utils.mk_text "default" (ax + 5, ay) input.name in
+    let name, _ = input.para_info in
+    let text = Utils.mk_text "default" (ax + 5, ay) name in
     Utils.on_mouseclick_set circle (fun _ ->
       Js.log "click";
       let _  = match input.input with
-      | None -> input.input <- Utils.get_focus context
+      | None -> begin
+        match Utils.get_focus context with
+          | None -> ()
+          | Some (path, typ) ->
+            input.input <- Some path
+        end
       | _ -> Js.log "input"; ()
       in
       let edges = Document.get_by_id Document.document "edges" in
@@ -73,13 +79,13 @@ let draw_node graph context parent (node:node) =
     );
     (svg^text, i + 1)
   ) ("", 0) (node.inputs:param array) in
-  let txt, _ = Array.fold_left (fun (svg, i) output ->
+  let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
     let circle = Circle.mk_circle_in parent "default" 3
       (x2, (get_ancher y1 h (Array.length node.outputs) i))
     in
     Utils.on_mouseclick_set circle (fun _ ->
       Document.setAttribute circle "class" "focus";
-      Utils.set_focus context (circle, Node.mk_path node.name output)
+      Utils.set_focus context (circle, (Node.mk_path node.name output, typ))
     );
     (svg, i + 1)
   ) (txt, 0) node.outputs in

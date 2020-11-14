@@ -1,21 +1,21 @@
 type var =
   | VAR of string
-  | PATH of string * string
+  | PATH of string * Names.Name.t
 
 type param = {
-  name: string;
+  para_info: (string * Constr.t); (* Name, Type *)
   mutable input: var option;
 }
 
 type node = {
   name: string;
   inputs: param array;
-  outputs: string array;
+  outputs: (Names.Name.t * Constr.t) array;
 }
 
 let mk_path a b = PATH (a,b)
 let mk_var a = VAR a
-let mk_param name input = {name = name; input = input}
+let mk_param info input = {para_info = info; input = input}
 
 let mk_node name inputs outputs = {name=name; inputs=inputs; outputs=outputs}
 
@@ -55,7 +55,7 @@ let find_output_idx x node: int =
   let rec find_idx lst =
     match lst with
     | [] -> raise Not_found
-    | h :: t -> if x = h then 0 else 1 + find_idx t
+    | h :: t -> if x = fst h then 0 else 1 + find_idx t
   in
   find_idx (Array.to_list node.outputs)
 

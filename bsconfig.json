@@ -15,6 +15,7 @@
 
   "bs-dependencies": [
     "bs-webapi",
+    "mini-cic",
   ],
 
   "warnings": {

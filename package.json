@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "bs-webapi": "^0.19.1",
-    "dagre": "^0.8.5"
+    "dagre": "^0.8.5",
+    "mini-cic": "git+https://github.com/zoyoeproject/daoism-cic.git"
   }
 }
