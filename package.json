@@ -17,7 +17,7 @@
     "clean": "bsb -clean-world",
     "bsb": "bsb",
     "start": "webpack-dev-server",
-    "postinstall": "bsb -make-world; webpack"
+    "postinstall": "bsb -make-world && webpack"
   },
   "devDependencies": {
     "bs-platform": "^8.2.0",
