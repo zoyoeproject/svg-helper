@@ -9,6 +9,7 @@ type param = {
 
 type node = {
   name: string;
+  src: Names.Constant.t;
   inputs: param array;
   outputs: (Names.Name.t * Constr.t) array;
 }
@@ -17,7 +18,7 @@ let mk_path a b = PATH (a,b)
 let mk_var a = VAR a
 let mk_param info input = {para_info = info; input = input}
 
-let mk_node name inputs outputs = {name=name; inputs=inputs; outputs=outputs}
+let mk_node name src inputs outputs = {name=name; src=src; inputs=inputs; outputs=outputs}
 
 let default_node_height = 40
 

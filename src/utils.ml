@@ -1,3 +1,5 @@
+open Context
+
 let set_name item name =
   match name with
   | None -> ()
@@ -35,11 +37,6 @@ let on_mouseup_set item call_back =
 
 let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
-
-type context_info = {
-  dragdrop: (Document.element * (Document.element -> unit)) option;
-  focus: (Document.element * (Node.var * Constr.t)) option;
-}
 
 let set_focus context focus =
   let _ = match !context.focus with
