@@ -40,14 +40,15 @@ let on_mousemove_set item call_back =
 
 let set_focus context focus =
   let _ = match !context.focus with
-    | Some (focus, _)  -> Document.setAttribute focus "class" "default"
+    | Some (Create (focus, _))  -> Document.setAttribute focus "class" "default"
+    | Some (Connect (focus, _))  -> Document.setAttribute focus "class" "default"
     | _ -> ()
   in
   context := {!context with focus = Some focus}
 
-let get_focus context =
+let get_focus_connect context =
   match !context.focus with
-    | Some (_, var) -> Some var
+    | Some (Connect (_, var)) -> Some var
     | _ -> None
 
 let init_dragdrop_item _ (*parent*) item callback context =
@@ -67,7 +68,21 @@ let get_translate_info i =
   let matrix = Document.getMatrix transform in
   Document.(matrix.e, matrix.f)
 
-let init_dragdrop parent item =
+let set_cfg_cursor context svg =
+  let parent = !context.cfg_ele in
+  let style = parent |. Document.style in
+  Js.log svg;
+  Document.setCursor style
+    @@ Printf.sprintf "url('data:image/svg+xml;utf8,<svg height=\"48\" width=\"48\" class=\"default\" font-size=\"10px\" font-family=\"sans-serif\" fill=\"none\" stroke=\"black\" xmlns=\"http://www.w3.org/2000/svg\">%s</svg>') 24 24, auto" svg
+
+let init_context parent =
+  let context = ref {
+    cfg_ele = parent;
+    dragdrop = None;
+    focus = None
+  } in context
+
+let init_dragdrop context parent item =
   let pan_state = ref Event.Nothing in
   let transform = Document.transform item in
   let base_transforms = transform.baseVal in
@@ -75,8 +90,6 @@ let init_dragdrop parent item =
   let matrix_transform = Document.createTransform base_transforms matrix in
   Document.appendItem base_transforms matrix_transform;
   Js.log @@ Array.length transform.baseVal;
-
-  let context = ref {dragdrop=None; focus=None} in
 
   let dragdrop (px, py) (cx, cy) cont =
     let i = match !context.dragdrop with
@@ -110,6 +123,5 @@ let init_dragdrop parent item =
 
   on_mousedown_set parent handle_mouse_down;
   on_mouseup_set parent handle_mouse_up;
-  on_mousemove_set parent handle_mouse_move;
-  context
+  on_mousemove_set parent handle_mouse_move
 

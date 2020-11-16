@@ -1,1 +1,1 @@
-val init_flowgraph: Document.element -> Node.node list -> unit
+val init_flowgraph: Context.context_info ref -> Document.element -> Node.node list -> unit

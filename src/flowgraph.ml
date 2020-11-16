@@ -64,13 +64,12 @@ let draw_node graph context parent (node:node) =
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (ax + 5, ay) name in
     Utils.on_mouseclick_set circle (fun _ ->
-      Js.log "click";
       let _  = match input.input with
       | None -> begin
-        match Utils.get_focus context with
-          | None -> ()
+        match Utils.get_focus_connect context with
           | Some (path, typ) ->
             input.input <- Some path
+          | _ -> ()
         end
       | _ -> Js.log "input"; ()
       in
@@ -85,7 +84,7 @@ let draw_node graph context parent (node:node) =
     in
     Utils.on_mouseclick_set circle (fun _ ->
       Document.setAttribute circle "class" "focus";
-      Utils.set_focus context (circle, (Node.mk_path node.name output, typ))
+      Utils.set_focus context (Connect (circle, (Node.mk_path node.name output, typ)))
     );
     (svg, i + 1)
   ) (txt, 0) node.outputs in
@@ -96,16 +95,17 @@ let draw_nodes svgele parent graph context =
     let node = DagreFFI.get_node graph node_name in
     let extra = DagreFFI.extract node in
     let item = Utils.mk_group_in parent (Some node_name) "" in
+    Document.setAttribute item "class" "default";
     draw_node graph context item extra;
     Utils.set_translate_matrix svgele item (node.x, node.y);
     Utils.init_dragdrop_item svgele item (update_edges graph node) context
   ) (DagreFFI.nodes graph)
 
-let init_flowgraph svgele nodes =
+let init_flowgraph context svgele nodes =
   let graph = DagreFFI.create_graph () in
   init_graph graph nodes;
   let all = Utils.mk_group_in svgele (Some "all") "" in
-  let context = Utils.init_dragdrop svgele all in
+  Utils.init_dragdrop context svgele all;
   draw_nodes svgele all graph context;
   ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges graph)
 

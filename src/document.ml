@@ -1,12 +1,16 @@
 type dom
 type element
 type daoism
+type style
 
 external document : dom = "document" [@@bs.val]
 external get_by_id: dom -> string -> element = "getElementById" [@@bs.send]
 external add_event_listener: element -> string -> 'a -> unit = "addEventListener" [@@bs.send]
-external innerHTML : element -> string = "" [@@bs.get]
-external outerHTML : element -> string = "" [@@bs.get]
+external innerHTML : element -> string = "innerHTML" [@@bs.get]
+external outerHTML : element -> string = "innerHTML" [@@bs.get]
+external style : element -> style = "style" [@@bs.get]
+
+external setCursor : style -> string -> unit = "cursor" [@@bs.set]
 
 external setInnerHTML : element -> string -> unit = "innerHTML" [@@bs.set]
 external setOuterHTML : element -> string -> unit = "outerHTML" [@@bs.set]
