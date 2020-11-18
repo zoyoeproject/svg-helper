@@ -1,6 +1,7 @@
 open Node
-open Names
-module ConstantMap =  Map.Make(Names.Constant)
+open MiniCic.Names
+module Constr = MiniCic.Constr
+module ConstantMap =  Map.Make(Constant)
 
 let mk_constant_map () = ConstantMap.empty
 

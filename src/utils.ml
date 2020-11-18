@@ -41,7 +41,7 @@ let on_mousemove_set item call_back =
 let init_dragdrop_item _ (*parent*) item callback context =
 
   let handle_mouse_down _ =
-    context := {!context with dragdrop = Some (item, callback)}
+    context.dragdrop <- Some (item, callback)
   in
 
   let handle_mouse_up _ = () in
@@ -56,7 +56,7 @@ let get_translate_info i =
   Document.(matrix.e, matrix.f)
 
 let set_cfg_cursor context svg =
-  let parent = !context.cfg_ele in
+  let parent = context.cfg_ele in
   let style = parent |. Document.style in
   Js.log svg;
   Document.setCursor style
@@ -84,7 +84,7 @@ let init_graph graph nodes =
 let init_context parent nodes =
   let graph = DagreFFI.create_graph () in
   init_graph graph nodes;
-  let context = ref {
+  let context = {
     cfg_ele = parent;
     dragdrop = None;
     focus = None;
@@ -101,7 +101,7 @@ let init_dragdrop context parent item =
   Js.log @@ Array.length transform.baseVal;
 
   let dragdrop (px, py) (cx, cy) cont =
-    let i = match !context.dragdrop with
+    let i = match context.dragdrop with
       | None -> Js.log "none"; item
       | Some (i,_) -> i
     in
@@ -111,11 +111,12 @@ let init_dragdrop context parent item =
     let t = cx - px, cy - py in
     let matrix = Document.translate matrix (fst t) (snd t) in
     Document.setMatrix transform matrix;
-    let _ = match !context.dragdrop with
+    let _ = match context.dragdrop with
       | Some (item, cb) -> cb item
       | _ -> ()
     in
-    if cont then context := {!context with dragdrop=None}
+    if cont then
+      context.dragdrop <- None
   in
 
   let handle_mouse_down minfo =

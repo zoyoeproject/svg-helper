@@ -1,24 +1,26 @@
 open Node
-let basic_module_dir = Names.DirPath.make [Names.Id.of_string "core"]
-let c_demo = Names.Constant.make Names.ModPath.initial (Names.Label.of_string "demo")
-let c_int_type = Names.Constant.make Names.ModPath.initial (Names.Label.of_string "int")
+open MiniCic.Names
+module Constr = MiniCic.Constr
+let basic_module_dir = DirPath.make [Id.of_string "core"]
+let c_demo = Constant.make ModPath.initial (Label.of_string "demo")
+let c_int_type = Constant.make ModPath.initial (Label.of_string "int")
 
 let int_type = Constr.Const (c_int_type, 1)
 
-let c_plus = Names.Constant.make Names.ModPath.initial (Names.Label.of_string "plus")
-let c_minus = Names.Constant.make Names.ModPath.initial (Names.Label.of_string "minus")
+let c_plus = Constant.make ModPath.initial (Label.of_string "plus")
+let c_minus = Constant.make ModPath.initial (Label.of_string "minus")
 
 let c_intop_type =
-  let x = Names.Name.mk_name @@ Names.Id.of_string "x" in
-  let y = Names.Name.mk_name @@ Names.Id.of_string "y" in
+  let x = Name.mk_name @@ Id.of_string "x" in
+  let y = Name.mk_name @@ Id.of_string "y" in
   Constr.mkProd (x, int_type, Constr.mkProd (y, int_type, int_type))
 
 let init_context parent =
-  let x = Names.Name.mk_name "x" in
-  let y = Names.Name.mk_name "y" in
-  let a = Names.Name.mk_name "a" in
-  let b = Names.Name.mk_name "b" in
-  let c = Names.Name.mk_name "c" in
+  let x = Name.mk_name "x" in
+  let y = Name.mk_name "y" in
+  let a = Name.mk_name "a" in
+  let b = Name.mk_name "b" in
+  let c = Name.mk_name "c" in
   let nodes = [
     Node.mk_node "n1" c_demo [|mk_param ("i1",int_type) (Some (mk_var "i"))|]
       [|x, int_type ;
@@ -31,7 +33,7 @@ let init_context parent =
         mk_param ("x", int_type) (Some (mk_path "n2" a));
         mk_param ("y", int_type) (None);
         mk_param ("z", int_type) (Some (mk_path "n4" c));
-    |] [|Names.Name.Anonymous, int_type|];
+    |] [|Name.Anonymous, int_type|];
   ] in
   let nodes = List.fold_left (fun map n ->
     Context.NodeMap.add n.name (Node.mk_graph_node n) map

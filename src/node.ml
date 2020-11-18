@@ -1,3 +1,4 @@
+open MiniCic
 type var =
   | VAR of string
   | PATH of string * Names.Name.t

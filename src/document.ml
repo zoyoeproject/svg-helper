@@ -14,7 +14,7 @@ external setCursor : style -> string -> unit = "cursor" [@@bs.set]
 
 external setInnerHTML : element -> string -> unit = "innerHTML" [@@bs.set]
 external setOuterHTML : element -> string -> unit = "outerHTML" [@@bs.set]
-external setAttribute : element -> string -> string -> unit = "" [@@bs.send]
+external setAttribute : element -> string -> string -> unit = "setAttribute" [@@bs.send]
 
 external createElement : dom -> string -> element
     = "createElement" [@@bs.send]

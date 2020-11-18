@@ -57,7 +57,7 @@ let draw_node context parent node =
       | _ -> Js.log "input"; ()
       in
       let edges = Document.get_by_id Document.document "edges" in
-      Document.setInnerHTML edges (draw_edges !context.nodes)
+      Document.setInnerHTML edges (draw_edges context.nodes)
     );
     (svg^text, i + 1)
   ) ("", 0) (node.inputs:param array) in
@@ -80,11 +80,37 @@ let draw_nodes svgele parent context =
     Document.setAttribute item "class" "default";
     draw_node context item extra;
     Utils.set_translate_matrix svgele item (node.x, node.y);
-    Utils.init_dragdrop_item svgele item (update_edges !context.nodes node) context
-  ) !context.nodes
+    Utils.init_dragdrop_item svgele item (update_edges context.nodes node) context
+  ) context.nodes
+
+let reset context =
+  let parent = Document.get_by_id Document.document "nodes" in
+  let edges = Document.get_by_id Document.document "edges" in
+  Document.setInnerHTML parent "";
+  Document.setInnerHTML edges "";
+  draw_nodes context.cfg_ele parent context;
+  Document.setInnerHTML edges (draw_edges context.nodes)
+
+let add_node context node (x,y) =
+  let node_size = mk_graph_node node in
+  node_size.x <- x;
+  node_size.y <- y;
+  context.nodes <- NodeMap.add node.name node_size context.nodes;
+  reset context
 
 let init_flowgraph context svgele =
   let all = Utils.mk_group_in svgele (Some "all") "" in
   Utils.init_dragdrop context svgele all;
   draw_nodes svgele all context;
-  ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges !context.nodes)
+  ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges context.nodes);
+  Utils.on_mouseclick_set svgele (fun e ->
+    match Context.get_focus_create context with
+    | Some (k, t) -> begin
+        Js.log "create";
+        let node = Component.constr_to_node (k, t) "" in
+        add_node context node Document.(e.clientX, e.clientY);
+        ()
+      end
+    | _ -> ()
+  )
+
