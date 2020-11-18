@@ -7,7 +7,7 @@ type param = {
   mutable input: var option;
 }
 
-type node = {
+type t = {
   name: string;
   src: Names.Constant.t;
   inputs: param array;

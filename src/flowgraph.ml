@@ -1,32 +1,15 @@
 open Node
+open Context
 let input_padding = 3
 
-let build_edges graph nodes =
-  List.iter (fun node ->
-    let src = node.name in
-    Array.iter (fun param ->
-      match param.input with
-      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
-      | _ -> ()
-    ) node.inputs
-  ) nodes
-
-let init_graph graph nodes =
-  List.iter (fun node ->
-    DagreFFI.add_node graph node.name (mk_graph_node node)
-  ) nodes;
-  build_edges graph nodes;
-  DagreFFI.layout graph
-
-let draw_edges graph =
-  Array.fold_left (fun svg node_name ->
-    let node = DagreFFI.get_node graph node_name in
-    let edges, _ = Array.fold_left (fun (svg, i) param ->
+let draw_edges (nodes:node_map) =
+  NodeMap.fold (fun _ (node:node) svg ->
+    let edges, _ = Array.fold_left (fun ((svg:string), i) param ->
       let ix, iy = get_input_ancher node i in
       match param.input with
       | Some (PATH (n, output)) -> begin
-        let src_node = DagreFFI.get_node graph n in
-        let out_idx = find_output_idx output src_node.extra in
+        let src_node = NodeMap.find n nodes in
+        let out_idx = find_output_idx output (DagreFFI.extract src_node) in
         let ox, oy = get_output_ancher src_node out_idx in
         let svg = svg ^ Arc.connect_horizontal "default-line"
             (Js.Int.toFloat ix, Js.Int.toFloat iy)
@@ -43,16 +26,16 @@ let draw_edges graph =
       | _ -> (svg, i+1)
     ) ("", 0) node.extra.inputs in
     svg ^ edges
-  ) "" (DagreFFI.nodes graph)
+  ) nodes ""
 
-let update_edges graph node item =
+let update_edges nodes node item =
   let parent = Document.get_by_id Document.document "edges" in
   let tsinfo = Utils.get_translate_info item in
   DagreFFI.(node.x <- fst tsinfo);
   DagreFFI.(node.y <- snd tsinfo);
-  Document.setInnerHTML parent (draw_edges graph)
+  Document.setInnerHTML parent (draw_edges nodes)
 
-let draw_node graph context parent (node:node) =
+let draw_node context parent node =
   let (cx, cy) = (0, 0) in
   let (w,h) = compute_size node in
   let x1, y1 = cx - w/2, cy - h/2 in
@@ -66,7 +49,7 @@ let draw_node graph context parent (node:node) =
     Utils.on_mouseclick_set circle (fun _ ->
       let _  = match input.input with
       | None -> begin
-        match Utils.get_focus_connect context with
+        match Context.get_focus_connect context with
           | Some (path, typ) ->
             input.input <- Some path
           | _ -> ()
@@ -74,7 +57,7 @@ let draw_node graph context parent (node:node) =
       | _ -> Js.log "input"; ()
       in
       let edges = Document.get_by_id Document.document "edges" in
-      Document.setInnerHTML edges (draw_edges graph)
+      Document.setInnerHTML edges (draw_edges !context.nodes)
     );
     (svg^text, i + 1)
   ) ("", 0) (node.inputs:param array) in
@@ -84,28 +67,24 @@ let draw_node graph context parent (node:node) =
     in
     Utils.on_mouseclick_set circle (fun _ ->
       Document.setAttribute circle "class" "focus";
-      Utils.set_focus context (Connect (circle, (Node.mk_path node.name output, typ)))
+      Context.toggle_focus context (Connect (circle, (Node.mk_path node.name output, typ)))
     );
     (svg, i + 1)
   ) (txt, 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
 
-let draw_nodes svgele parent graph context =
-  Array.iter (fun node_name ->
-    let node = DagreFFI.get_node graph node_name in
+let draw_nodes svgele parent context =
+  NodeMap.iter (fun node_name node ->
     let extra = DagreFFI.extract node in
     let item = Utils.mk_group_in parent (Some node_name) "" in
     Document.setAttribute item "class" "default";
-    draw_node graph context item extra;
+    draw_node context item extra;
     Utils.set_translate_matrix svgele item (node.x, node.y);
-    Utils.init_dragdrop_item svgele item (update_edges graph node) context
-  ) (DagreFFI.nodes graph)
+    Utils.init_dragdrop_item svgele item (update_edges !context.nodes node) context
+  ) !context.nodes
 
-let init_flowgraph context svgele nodes =
-  let graph = DagreFFI.create_graph () in
-  init_graph graph nodes;
+let init_flowgraph context svgele =
   let all = Utils.mk_group_in svgele (Some "all") "" in
   Utils.init_dragdrop context svgele all;
-  draw_nodes svgele all graph context;
-  ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges graph)
-
+  draw_nodes svgele all context;
+  ignore @@ Utils.mk_group_in all (Some "edges") (draw_edges !context.nodes)

@@ -26,7 +26,7 @@ let constr_to_node (c, typ) node_name =
 
 type component_bar = {
   container: Document.element;
-  components: Node.node ConstantMap.t;
+  components: Node.t ConstantMap.t;
 }
 
 let draw_node_as_tool parent node =
@@ -62,7 +62,7 @@ let init_component_bar context parent components =
       Js.log "click";
       Document.setAttribute node_ele "class" "focus";
       Utils.set_cfg_cursor context (Document.outerHTML node_ele);
-      Utils.set_focus context (Create (node_ele,
+      Context.toggle_focus context (Create (node_ele,
         (k, t)))
     );
     shift := !shift + 40

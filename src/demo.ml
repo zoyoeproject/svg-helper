@@ -13,9 +13,7 @@ let c_intop_type =
   let y = Names.Name.mk_name @@ Names.Id.of_string "y" in
   Constr.mkProd (x, int_type, Constr.mkProd (y, int_type, int_type))
 
-let init_context = Utils.init_context
-
-let demo_cfg context parent =
+let init_context parent =
   let x = Names.Name.mk_name "x" in
   let y = Names.Name.mk_name "y" in
   let a = Names.Name.mk_name "a" in
@@ -35,7 +33,13 @@ let demo_cfg context parent =
         mk_param ("z", int_type) (Some (mk_path "n4" c));
     |] [|Names.Name.Anonymous, int_type|];
   ] in
-  Flowgraph.init_flowgraph context parent nodes
+  let nodes = List.fold_left (fun map n ->
+    Context.NodeMap.add n.name (Node.mk_graph_node n) map
+  ) Context.NodeMap.empty nodes in
+  Utils.init_context parent nodes
+
+let demo_cfg context parent =
+  Flowgraph.init_flowgraph context parent
 
 let demo_component context parent =
   let components = Component.mk_constant_map () in

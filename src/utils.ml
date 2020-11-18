@@ -38,19 +38,6 @@ let on_mouseup_set item call_back =
 let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
 
-let set_focus context focus =
-  let _ = match !context.focus with
-    | Some (Create (focus, _))  -> Document.setAttribute focus "class" "default"
-    | Some (Connect (focus, _))  -> Document.setAttribute focus "class" "default"
-    | _ -> ()
-  in
-  context := {!context with focus = Some focus}
-
-let get_focus_connect context =
-  match !context.focus with
-    | Some (Connect (_, var)) -> Some var
-    | _ -> None
-
 let init_dragdrop_item _ (*parent*) item callback context =
 
   let handle_mouse_down _ =
@@ -75,11 +62,33 @@ let set_cfg_cursor context svg =
   Document.setCursor style
     @@ Printf.sprintf "url('data:image/svg+xml;utf8,<svg height=\"48\" width=\"48\" class=\"default\" font-size=\"10px\" font-family=\"sans-serif\" fill=\"none\" stroke=\"black\" xmlns=\"http://www.w3.org/2000/svg\">%s</svg>') 24 24, auto" svg
 
-let init_context parent =
+let build_edges graph nodes =
+  let open Node in
+  NodeMap.iter (fun name node ->
+    let node = DagreFFI.extract node in
+    let src = name in
+    Array.iter (fun param ->
+      match param.input with
+      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
+      | _ -> ()
+    ) node.inputs
+  ) nodes
+
+let init_graph graph nodes =
+  NodeMap.iter (fun node_name node ->
+    DagreFFI.add_node graph node_name node
+  ) nodes;
+  build_edges graph nodes;
+  DagreFFI.layout graph
+
+let init_context parent nodes =
+  let graph = DagreFFI.create_graph () in
+  init_graph graph nodes;
   let context = ref {
     cfg_ele = parent;
     dragdrop = None;
-    focus = None
+    focus = None;
+    nodes = nodes
   } in context
 
 let init_dragdrop context parent item =
