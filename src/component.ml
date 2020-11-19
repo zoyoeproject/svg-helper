@@ -63,7 +63,7 @@ let init_component_bar context parent components =
       if Context.toggle_focus context (Create (node_ele, (k, t))) then
         Utils.set_cfg_cursor context (Document.outerHTML node_ele)
       else
-        Utils.restore_cfg_cursor context "auto"
+        Utils.restore_cfg_cursor context
     );
     shift := !shift + 40
  ) components

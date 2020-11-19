@@ -62,7 +62,7 @@ let set_cfg_cursor context svg =
   Document.setCursor style
     @@ Printf.sprintf "url('data:image/svg+xml;utf8,<svg height=\"48\" width=\"48\" class=\"default\" font-size=\"10px\" font-family=\"sans-serif\" fill=\"none\" stroke=\"black\" xmlns=\"http://www.w3.org/2000/svg\">%s</svg>') 24 24, auto" svg
 
-let restore_cfg_cursor context svg =
+let restore_cfg_cursor context =
   let parent = context.cfg_ele in
   let style = parent |. Document.style in
   Document.setCursor style "auto"

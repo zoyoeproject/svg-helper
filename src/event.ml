@@ -27,4 +27,3 @@ let pan_handler cb s token = match s with
       | Move (nx, ny) -> cb (x,y) (nx, ny) false; Drag (nx, ny)
       | Leave (nx, ny) -> cb (x,y) (nx, ny) true; Nothing
     end
-  | _ -> Nothing

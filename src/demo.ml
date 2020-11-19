@@ -27,7 +27,7 @@ let demo_component context parent =
 let build_cfg parent (c:MiniCic.Constr.t) =
   let open Constr in
   let ctxt = Utils.init_context parent Context.NodeMap.empty in
-  let rec aux inputs acc c : var option =
+  let rec aux inputs _ c : var option =
     match c with
     | App (c, l) ->
       let inputs = Array.mapi (fun i c ->
@@ -43,8 +43,8 @@ let build_cfg parent (c:MiniCic.Constr.t) =
     | Rel k -> List.nth inputs (k-1)
     | _ -> Constr.fold_with_full_binders push_local_def aux inputs None c
   and push_local_def c inputs = match c with
-    | LocalDef (n, b, t) -> (aux inputs None b) :: inputs
-    | LocalAssum (n, t) -> Some (mk_var (Name.to_string n)) :: inputs
+    | LocalDef (_, b, _) -> (aux inputs None b) :: inputs
+    | LocalAssum (n, _) -> Some (mk_var (Name.to_string n)) :: inputs
   in
   let _ = fold_with_full_binders push_local_def aux [] None c in
   let graph = DagreFFI.create_graph () in
@@ -81,8 +81,6 @@ let init_context_with_constr parent =
   let open Constr in
   let x = Name.mk_name "x" in
   let y = Name.mk_name "y" in
-  let a = Name.mk_name "a" in
-  let b = Name.mk_name "b" in
   let app = mkApp (mkConstU (c_plus, 1), [|mkRel 1; mkRel 2|]) in
   let app = mkApp (mkConstU (c_plus, 1), [|mkRel 2; app|]) in
   let c = mkLambda (x, int_type, mkLambda (y, int_type, app)) in

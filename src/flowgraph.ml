@@ -106,7 +106,7 @@ let init_flowgraph context svgele =
     match Context.get_focus_create context with
     | Some (k, t) -> begin
         Context.clear_focus context;
-        Utils.restore_cfg_cursor context "auto";
+        Utils.restore_cfg_cursor context;
         Js.log @@ "create" ^ MiniCic.Names.Constant.to_string k;
         let node = Component.constr_to_node (k, t) (Context.new_ssa context) in
         add_node context node Document.(e.offsetX, e.offsetY);
