@@ -64,3 +64,33 @@ let get_focus_create context =
   match context.focus with
     | Some (Create (_, var)) -> Some var
     | _ -> None
+
+let build_edges graph nodes =
+  let open Node in
+  NodeMap.iter (fun name node ->
+    let node = DagreFFI.extract node in
+    let src = name in
+    Array.iter (fun param ->
+      match param.input with
+      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
+      | _ -> ()
+    ) node.inputs
+  ) nodes
+
+let init_layout graph nodes =
+  NodeMap.iter (fun node_name node ->
+    DagreFFI.add_node graph node_name node
+  ) nodes;
+  build_edges graph nodes;
+  DagreFFI.layout graph
+
+let init_context parent nodes =
+  let graph = DagreFFI.create_graph () in
+  init_layout graph nodes;
+  let context = {
+    ssa_count = 0;
+    cfg_ele = parent;
+    dragdrop = None;
+    focus = None;
+    nodes = nodes
+  } in context

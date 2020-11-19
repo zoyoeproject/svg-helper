@@ -61,9 +61,10 @@ let init_component_bar context parent components =
     Utils.set_translate_matrix parent node_ele (!shift, 0);
     Utils.on_mouseclick_set node_ele (fun _ ->
       if Context.toggle_focus context (Create (node_ele, (k, t))) then
-        Utils.set_cfg_cursor context (Document.outerHTML node_ele)
+        Utils.set_cfg_cursor context.cfg_ele
+          (Document.outerHTML node_ele)
       else
-        Utils.restore_cfg_cursor context
+        Utils.restore_cfg_cursor context.cfg_ele
     );
     shift := !shift + 40
  ) components

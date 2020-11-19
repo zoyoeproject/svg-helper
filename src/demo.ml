@@ -26,7 +26,7 @@ let demo_component context parent =
 
 let build_cfg parent (c:MiniCic.Constr.t) =
   let open Constr in
-  let ctxt = Utils.init_context parent Context.NodeMap.empty in
+  let ctxt = Context.init_context parent Context.NodeMap.empty in
   let rec aux inputs _ c : var option =
     match c with
     | App (c, l) ->
@@ -48,7 +48,7 @@ let build_cfg parent (c:MiniCic.Constr.t) =
   in
   let _ = fold_with_full_binders push_local_def aux [] None c in
   let graph = DagreFFI.create_graph () in
-  Utils.init_graph graph ctxt.nodes;
+  Context.init_layout graph ctxt.nodes;
   ctxt
 
 let init_context parent =
@@ -74,7 +74,7 @@ let init_context parent =
   let nodes = List.fold_left (fun map n ->
     Context.NodeMap.add n.name (Node.mk_graph_node n) map
   ) Context.NodeMap.empty nodes in
-  Utils.init_context parent nodes
+  Context.init_context parent nodes
 
 
 let init_context_with_constr parent =

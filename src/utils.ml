@@ -1,5 +1,3 @@
-open Context
-
 let set_name item name =
   match name with
   | None -> ()
@@ -39,7 +37,7 @@ let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
 
 let init_dragdrop_item _ (*parent*) item callback context =
-
+  let open Context in
   let handle_mouse_down _ =
     context.dragdrop <- Some (item, callback)
   in
@@ -55,38 +53,17 @@ let get_translate_info i =
   let matrix = Document.getMatrix transform in
   Document.(matrix.e, matrix.f)
 
-let set_cfg_cursor context svg =
-  let parent = context.cfg_ele in
+let set_cfg_cursor parent svg =
   let style = parent |. Document.style in
-  Js.log svg;
   Document.setCursor style
     @@ Printf.sprintf "url('data:image/svg+xml;utf8,<svg height=\"48\" width=\"48\" class=\"default\" font-size=\"10px\" font-family=\"sans-serif\" fill=\"none\" stroke=\"black\" xmlns=\"http://www.w3.org/2000/svg\">%s</svg>') 24 24, auto" svg
 
-let restore_cfg_cursor context =
-  let parent = context.cfg_ele in
+let restore_cfg_cursor parent =
   let style = parent |. Document.style in
   Document.setCursor style "auto"
 
-let build_edges graph nodes =
-  let open Node in
-  NodeMap.iter (fun name node ->
-    let node = DagreFFI.extract node in
-    let src = name in
-    Array.iter (fun param ->
-      match param.input with
-      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
-      | _ -> ()
-    ) node.inputs
-  ) nodes
-
-let init_graph graph nodes =
-  NodeMap.iter (fun node_name node ->
-    DagreFFI.add_node graph node_name node
-  ) nodes;
-  build_edges graph nodes;
-  DagreFFI.layout graph
-
 let init_dragdrop context parent item =
+  let open Context in
   let pan_state = ref Event.Nothing in
   let transform = Document.transform item in
   let base_transforms = transform.baseVal in
@@ -131,13 +108,4 @@ let init_dragdrop context parent item =
   on_mousemove_set parent handle_mouse_move
 
 
-let init_context parent nodes =
-  let graph = DagreFFI.create_graph () in
-  init_graph graph nodes;
-  let context = {
-    ssa_count = 0;
-    cfg_ele = parent;
-    dragdrop = None;
-    focus = None;
-    nodes = nodes
-  } in context
+
