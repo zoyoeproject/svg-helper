@@ -60,11 +60,10 @@ let init_component_bar context parent components =
     Document.setAttribute node_ele "class" "default";
     Utils.set_translate_matrix parent node_ele (!shift, 0);
     Utils.on_mouseclick_set node_ele (fun _ ->
-      Js.log "click";
-      Document.setAttribute node_ele "class" "focus";
-      Utils.set_cfg_cursor context (Document.outerHTML node_ele);
-      Context.toggle_focus context (Create (node_ele,
-        (k, t)))
+      if Context.toggle_focus context (Create (node_ele, (k, t))) then
+        Utils.set_cfg_cursor context (Document.outerHTML node_ele)
+      else
+        Utils.restore_cfg_cursor context "auto"
     );
     shift := !shift + 40
  ) components

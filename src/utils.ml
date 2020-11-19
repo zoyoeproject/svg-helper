@@ -62,6 +62,11 @@ let set_cfg_cursor context svg =
   Document.setCursor style
     @@ Printf.sprintf "url('data:image/svg+xml;utf8,<svg height=\"48\" width=\"48\" class=\"default\" font-size=\"10px\" font-family=\"sans-serif\" fill=\"none\" stroke=\"black\" xmlns=\"http://www.w3.org/2000/svg\">%s</svg>') 24 24, auto" svg
 
+let restore_cfg_cursor context svg =
+  let parent = context.cfg_ele in
+  let style = parent |. Document.style in
+  Document.setCursor style "auto"
+
 let build_edges graph nodes =
   let open Node in
   NodeMap.iter (fun name node ->
@@ -80,16 +85,6 @@ let init_graph graph nodes =
   ) nodes;
   build_edges graph nodes;
   DagreFFI.layout graph
-
-let init_context parent nodes =
-  let graph = DagreFFI.create_graph () in
-  init_graph graph nodes;
-  let context = {
-    cfg_ele = parent;
-    dragdrop = None;
-    focus = None;
-    nodes = nodes
-  } in context
 
 let init_dragdrop context parent item =
   let pan_state = ref Event.Nothing in
@@ -135,3 +130,14 @@ let init_dragdrop context parent item =
   on_mouseup_set parent handle_mouse_up;
   on_mousemove_set parent handle_mouse_move
 
+
+let init_context parent nodes =
+  let graph = DagreFFI.create_graph () in
+  init_graph graph nodes;
+  let context = {
+    ssa_count = 0;
+    cfg_ele = parent;
+    dragdrop = None;
+    focus = None;
+    nodes = nodes
+  } in context

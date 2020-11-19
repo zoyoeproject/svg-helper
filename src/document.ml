@@ -59,6 +59,8 @@ external getMatrix : transform -> matrix = "matrix" [@@bs.get]
 type mouse_event_info = {
   clientX: int;
   clientY: int;
+  offsetX: int;
+  offsetY: int;
 }
 
 external stopPropagation: mouse_event_info -> unit = "" [@@bs.send]

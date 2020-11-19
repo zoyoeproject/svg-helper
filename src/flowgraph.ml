@@ -66,7 +66,6 @@ let draw_node context parent node =
       (x2, (get_ancher y1 h (Array.length node.outputs) i))
     in
     Utils.on_mouseclick_set circle (fun _ ->
-      Document.setAttribute circle "class" "focus";
       Context.toggle_focus context (Connect (circle, (Node.mk_path node.name output, typ)))
     );
     (svg, i + 1)
@@ -84,17 +83,17 @@ let draw_nodes svgele parent context =
   ) context.nodes
 
 let reset context =
-  let parent = Document.get_by_id Document.document "nodes" in
-  let edges = Document.get_by_id Document.document "edges" in
+  let parent = Document.get_by_id Document.document "all" in
   Document.setInnerHTML parent "";
-  Document.setInnerHTML edges "";
   draw_nodes context.cfg_ele parent context;
-  Document.setInnerHTML edges (draw_edges context.nodes)
+  ignore @@ Utils.mk_group_in parent (Some "edges") (draw_edges context.nodes)
 
 let add_node context node (x,y) =
+  let parent = Document.get_by_id Document.document "all" in
+  let offx, offy = Utils.get_translate_info parent in
   let node_size = mk_graph_node node in
-  node_size.x <- x;
-  node_size.y <- y;
+  node_size.x <- x - offx;
+  node_size.y <- y - offy;
   context.nodes <- NodeMap.add node.name node_size context.nodes;
   reset context
 
@@ -106,9 +105,11 @@ let init_flowgraph context svgele =
   Utils.on_mouseclick_set svgele (fun e ->
     match Context.get_focus_create context with
     | Some (k, t) -> begin
-        Js.log "create";
-        let node = Component.constr_to_node (k, t) "" in
-        add_node context node Document.(e.clientX, e.clientY);
+        Context.clear_focus context;
+        Utils.restore_cfg_cursor context "auto";
+        Js.log @@ "create" ^ MiniCic.Names.Constant.to_string k;
+        let node = Component.constr_to_node (k, t) (Context.new_ssa context) in
+        add_node context node Document.(e.offsetX, e.offsetY);
         ()
       end
     | _ -> ()
