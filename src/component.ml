@@ -1,11 +1,9 @@
 open Node
 open MiniCic.Names
-module Constr = MiniCic.Constr
+
 module ConstantMap =  Map.Make(Constant)
 
 let mk_constant_map () = ConstantMap.empty
-
-let get_type context c = ConstantMap.find context c
 
 let add_constant context (n, c) = ConstantMap.add n c context
 
@@ -14,7 +12,7 @@ let get_the_Name n = match n with
   | _ -> assert false
 
 let rec collect_params acc c =
-  let open Constr in
+  let open MiniCic.Constr in
   match c with
   | Prod (n, t, c) ->
     collect_params Node.({ para_info = (get_the_Name n, t); input = None } :: acc)
