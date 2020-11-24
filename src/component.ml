@@ -28,11 +28,15 @@ type component_bar = {
   components: Node.t ConstantMap.t;
 }
 
+let font_size = 10
+
 let draw_node_as_tool parent node =
   let (w,h) = compute_size node in
-  let (cx, cy) = (w/2 + 10, h/2 + 10) in
+  let (cx, cy) = (w/2 + 10, h/2 + 10 + font_size) in
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
+  let text = Utils.mk_text "default" (x1, y1 - 2)
+    (Constant.label node.src |> Label.to_string ) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
@@ -40,7 +44,7 @@ let draw_node_as_tool parent node =
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (ax + 5, ay) name in
     (svg^text, i + 1)
-  ) ("", 0) (node.inputs:param array) in
+  ) (text, 0) (node.inputs:param array) in
   let txt, _ = Array.fold_left (fun (svg, i) _ ->
     let _ = Circle.mk_circle_in parent "default" 3
       (x2, (get_ancher y1 h (Array.length node.outputs) i))

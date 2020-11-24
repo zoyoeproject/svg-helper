@@ -36,10 +36,12 @@ let update_edges nodes node item =
   Document.setInnerHTML parent (draw_edges nodes)
 
 let draw_node context parent node =
+  let open MiniCic.Names in
   let (cx, cy) = (0, 0) in
   let (w,h) = compute_size node in
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
+  let text = Utils.mk_text "default" (x1, y1 - 2) (Constant.to_string node.src) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
@@ -60,7 +62,7 @@ let draw_node context parent node =
       Document.setInnerHTML edges (draw_edges context.nodes)
     );
     (svg^text, i + 1)
-  ) ("", 0) (node.inputs:param array) in
+  ) (text, 0) (node.inputs:param array) in
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
     let circle = Circle.mk_circle_in parent "default" 3
       (x2, (get_ancher y1 h (Array.length node.outputs) i))

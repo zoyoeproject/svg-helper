@@ -3,8 +3,8 @@ open MiniCic.Names
 open MiniCic.CoreType
 module Constr = MiniCic.Constr
 
-let c_plus = Constant.make ModPath.initial (Label.of_string "plus")
-let c_minus = Constant.make ModPath.initial (Label.of_string "minus")
+let c_plus = Constant.make core_dir (Label.of_string "plus")
+let c_minus = Constant.make core_dir (Label.of_string "minus")
 
 let int_bop_type =
   let x = Name.mk_name @@ Id.of_string "x" in
