@@ -15,7 +15,7 @@ let build_cfg parent env (c:MiniCic.Constr.t) =
       ) l in
       let node_name = Context.new_ssa ctxt in
       let r = Name.mk_name "r" in
-      let node = Node.mk_node node_name (fst @@ destConst c) inputs [|r, int_type|] in (* Change int type to the ret type of c *)
+      let node = Node.mk_node node_name c inputs [|r, int_type|] in (* Change int type to the ret type of c *)
       (* Name.mk_name *)
       ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
       Some (mk_path node_name r)

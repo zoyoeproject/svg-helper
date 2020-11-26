@@ -1,5 +1,7 @@
 open Node
+open MiniCic.CoreType
 open MiniCic.Names
+open MiniCic.Constr
 
 module ConstantMap =  Map.Make(Constant)
 
@@ -21,7 +23,10 @@ let rec collect_params acc c =
 
 let constr_to_node (c, typ) node_name =
   let args, output_typ = collect_params [] typ in
-  Node.mk_node node_name c (Array.of_list args) [|Name.Anonymous, output_typ|]
+  Node.mk_node node_name (mkConst c) (Array.of_list args) [|Name.Anonymous, output_typ|]
+
+let input_node c =
+  Node.mk_node "input__unique" c [||] [|Name.Anonymous, int_type|]
 
 type component_bar = {
   container: Document.element;
@@ -36,7 +41,7 @@ let draw_node_as_tool parent node =
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
   let text = Utils.mk_text "default" (x1, y1 - 2)
-    (Constant.label node.src |> Label.to_string ) in
+    (Constant.label (fst (destConst node.src)) |> Label.to_string ) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in

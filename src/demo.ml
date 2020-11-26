@@ -6,7 +6,7 @@ module Constr = MiniCic.Constr
 let demo_cfg context parent =
   Flowgraph.init_flowgraph context parent
 
-let c_demo = Constant.make ModPath.initial (Label.of_string "demo")
+let c_demo = Constr.mkConst @@ Constant.make ModPath.initial (Label.of_string "demo")
 
 let demo_component context parent =
   let components = Component.mk_constant_map () in

@@ -10,7 +10,7 @@ type param = {
 
 type t = {
   name: string;
-  src: Names.Constant.t;
+  src: Constr.t;
   inputs: param array;
   outputs: (Names.Name.t * Constr.t) array;
 }
