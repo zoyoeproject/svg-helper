@@ -5,6 +5,12 @@ open MiniCic.Names
 
 let input_padding = 3
 
+let print_var = function
+  | Var id -> Id.to_string id
+  | Const (c, _) -> Constant.to_string c
+  | Int i -> string_of_int i
+  | _ -> assert false
+
 let draw_edges (nodes:node_map) =
   NodeMap.fold (fun _ (node:node) svg ->
     let edges, _ = Array.fold_left (fun ((svg:string), i) param ->
@@ -23,7 +29,7 @@ let draw_edges (nodes:node_map) =
         let svg = svg ^ Arc.connect_horizontal "default-line"
             (Js.Int.toFloat (ix - 30), Js.Int.toFloat iy)
             (Js.Int.toFloat ix, Js.Int.toFloat iy) in
-        let svg = svg ^ Utils.mk_text "default" (ix-30, iy-input_padding) n in
+        let svg = svg ^ Utils.mk_text "default" (ix-30, iy-input_padding) (print_var n) in
         (svg, i+1)
         end
       | _ -> (svg, i+1)
@@ -61,36 +67,40 @@ let draw_normal context parent node (cx, cy) (w,h) =
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
     let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
     let name, _ = input.para_info in
-    let text = Utils.mk_text "default" (ax + 5, ay) name in
+    let text = Utils.mk_text "default" (ax + 5, ay + 2) name in
     set_input_ancher context input circle;
     (svg^text, i + 1)
   ) (text, 0) (node.inputs:param array) in
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
-    let circle = Circle.mk_circle_in parent "default" 3
-      (x2, (get_ancher y1 h (Array.length node.outputs) i))
+    let ax, ay = x2, (get_ancher y1 h (Array.length node.outputs) i) in
+    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let text = match output with
+      | Name.Anonymous -> ""
+      | Name.Name id -> Utils.mk_text "default" (ax + 5, ay + 2) (Id.to_string id)
     in
     set_output_ancher context circle (Node.mk_path node.name output, typ);
-    (svg, i + 1)
+    (svg ^ text, i + 1)
   ) (txt, 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
 
-let draw_input context parent node (cx, cy) =
-  let (w, h) = 30, 30 in
+let draw_input context parent node (cx, cy) (w, h) =
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
   let text = Utils.mk_text "default" (x1, y1 - 2) (Id.to_string (destVar node.src)) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
-    let circle = Circle.mk_circle_in parent "default" 3
-      (x2, (get_ancher y1 h (Array.length node.outputs) i))
+    let ax, ay = x2, (get_ancher y1 h (Array.length node.outputs) i) in
+    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let text = match output with
+      | Name.Anonymous -> ""
+      | Name.Name id -> Utils.mk_text "default" (ax + 5, ay + 2) (Id.to_string id)
     in
     set_output_ancher context circle (Node.mk_path node.name output, typ);
-    (svg, i + 1)
+    (svg ^ text, i + 1)
   ) (text, 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
 
-let draw_output context parent node (cx, cy) =
-  let (w, h) = 30, 30 in
+let draw_output context parent node (cx, cy) (w, h) =
   let x1, y1 = cx - w/2, cy - h/2 in
   let text = Utils.mk_text "default" (x1, y1 - 2) (Id.to_string (destVar node.src)) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
@@ -98,7 +108,7 @@ let draw_output context parent node (cx, cy) =
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
     let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
     let name, _ = input.para_info in
-    let text = Utils.mk_text "default" (ax + 5, ay) name in
+    let text = Utils.mk_text "default" (ax + 5, ay + 2) name in
     set_input_ancher context input circle;
     (svg^text, i + 1)
   ) (text, 0) (node.inputs:param array) in

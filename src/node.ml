@@ -1,6 +1,6 @@
 open MiniCic
 type var =
-  | VAR of string
+  | VAR of Constr.t
   | PATH of string * Names.Name.t
 
 type param = {

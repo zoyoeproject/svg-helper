@@ -13,8 +13,8 @@ let draw_node context parent node =
   let sz = compute_size node in
   match (Array.length node.inputs, Array.length node.outputs) with
   | 0, 0 -> assert false
-  | _, 0 -> NodeShape.draw_input context parent node center
-  | 0, _ -> NodeShape.draw_output context parent node center
+  | _, 0 -> NodeShape.draw_output context parent node center sz
+  | 0, _ -> NodeShape.draw_input context parent node center sz
   | _ -> NodeShape.draw_normal context parent node center sz
 
 let draw_nodes svgele parent context =
