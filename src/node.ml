@@ -28,8 +28,10 @@ let total_sz n = (n+1)*10
 let padding_sz l n = (l - (total_sz n)) / 2
 
 let compute_size node =
-  let nb_eles = max (Array.length node.inputs) (Array.length node.outputs) in
-  (30, total_sz nb_eles)
+  match node.src with
+  | Var _ -> (15,15)
+  | _ -> let nb_eles = max (Array.length node.inputs) (Array.length node.outputs) in
+    (30, total_sz nb_eles)
 
 let mk_graph_node node =
   let label = node.name in

@@ -84,34 +84,25 @@ let draw_normal context parent node (cx, cy) (w,h) =
   ignore @@ Utils.mk_group_in parent None txt
 
 let draw_input context parent node (cx, cy) (w, h) =
-  let x1, y1 = cx - w/2, cy - h/2 in
-  let x2, _ = cx + w/2, cy + h/2 in
-  let text = Utils.mk_text "default" (x1, y1 - 2) (Id.to_string (destVar node.src)) in
-  ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
-    let ax, ay = x2, (get_ancher y1 h (Array.length node.outputs) i) in
-    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
     let text = match output with
       | Name.Anonymous -> ""
-      | Name.Name id -> Utils.mk_text "default" (ax + 5, ay + 2) (Id.to_string id)
+      | Name.Name id -> Utils.mk_text "default" (cx + w/2, cy - h/2) (Id.to_string id)
     in
     set_output_ancher context circle (Node.mk_path node.name output, typ);
     (svg ^ text, i + 1)
-  ) (text, 0) node.outputs in
+  ) ("", 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
 
 let draw_output context parent node (cx, cy) (w, h) =
-  let x1, y1 = cx - w/2, cy - h/2 in
-  let text = Utils.mk_text "default" (x1, y1 - 2) (Id.to_string (destVar node.src)) in
-  ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
-    let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
-    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
     let name, _ = input.para_info in
-    let text = Utils.mk_text "default" (ax + 5, ay + 2) name in
+    let text = Utils.mk_text "default" (cx - w/2 , cy - h/2) name in
     set_input_ancher context input circle;
     (svg^text, i + 1)
-  ) (text, 0) (node.inputs:param array) in
+  ) ("", 0) (node.inputs:param array) in
   ignore @@ Utils.mk_group_in parent None txt
 
 
