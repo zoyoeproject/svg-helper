@@ -8,14 +8,21 @@ let update_edges nodes node item =
   DagreFFI.(node.y <- snd tsinfo);
   Document.setInnerHTML parent (NodeShape.draw_edges nodes)
 
+let is_var_node node = match node.src with
+  | MiniCic.Constr.Var _ -> true
+  | _ -> false
+
 let draw_node context parent node =
   let center = (0, 0) in
   let sz = compute_size node in
-  match (Array.length node.inputs, Array.length node.outputs) with
-  | 0, 0 -> assert false
-  | _, 0 -> NodeShape.draw_output context parent node center sz
-  | 0, _ -> NodeShape.draw_input context parent node center sz
-  | _ -> NodeShape.draw_normal context parent node center sz
+  if is_var_node node then
+    match (Array.length node.inputs, Array.length node.outputs) with
+    | 0, 0 -> assert false
+    | _, 0 -> NodeShape.draw_output context parent node center sz
+    | 0, _ -> NodeShape.draw_input context parent node center sz
+    | _ -> NodeShape.draw_var context parent node center sz
+  else
+    NodeShape.draw_normal context parent node center sz
 
 let draw_nodes svgele parent context =
   NodeMap.iter (fun node_name node ->

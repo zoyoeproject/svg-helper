@@ -18,8 +18,10 @@ let init_context_with_constr parent =
   let open Constr in
   let x = Name.mk_name "x" in
   let y = Name.mk_name "y" in
+  let z = Name.mk_name "z" in
+  let n = Constr.mkApp (mkConstU (c_minus, 1), [|Int 1; Int 2|]) in
   let app = mkApp (mkConstU (c_plus, 1), [|mkRel 1; mkRel 2|]) in
-  let app = mkApp (mkConstU (c_plus, 1), [|mkRel 2; app|]) in
-  let c = mkLambda (x, int_type, mkLambda (y, int_type, app)) in
+  let app = mkApp (mkConstU (c_plus, 1), [|mkRel 3; app|]) in
+  let c = mkLetIn (z, n, int_type, mkLambda (x, int_type, mkLambda (y, int_type, app))) in
   CfgEditor.build_cfg parent Global.basic_env c
 
