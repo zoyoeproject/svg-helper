@@ -23,5 +23,5 @@ let init_context_with_constr parent =
   let app = mkApp (mkConstU (c_plus, 1), [|mkRel 1; mkRel 2|]) in
   let app = mkApp (mkConstU (c_plus, 1), [|mkRel 3; app|]) in
   let c = mkLetIn (z, n, int_type, mkLambda (x, int_type, mkLambda (y, int_type, app))) in
-  CfgEditor.build_cfg parent Global.basic_env c
+  CfgEditor.build_cfg parent Global.basic_env
 
