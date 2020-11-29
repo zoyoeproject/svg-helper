@@ -1,4 +1,3 @@
-open Node
 open MiniCic.Names
 open Global
 open MiniCic.CoreType
@@ -16,12 +15,21 @@ let demo_component context parent =
 
 let init_context_with_constr parent =
   let open Constr in
-  let x = Name.mk_name "x" in
-  let y = Name.mk_name "y" in
-  let z = Name.mk_name "z" in
+  let x = Id.of_string "x" in
+  let y = Id.of_string "y" in
+  let z = Id.of_string "z" in
+  let app = mkApp (mkConstU (c_plus, 1), [|Constr.mkVar x; Constr.mkVar y|]) in
+  let app = mkApp (mkConstU (c_plus, 1), [|Constr.mkVar z; app|]) in
   let n = Constr.mkApp (mkConstU (c_minus, 1), [|Int 1; Int 2|]) in
-  let app = mkApp (mkConstU (c_plus, 1), [|mkRel 1; mkRel 2|]) in
-  let app = mkApp (mkConstU (c_plus, 1), [|mkRel 3; app|]) in
-  let c = mkLetIn (z, n, int_type, mkLambda (x, int_type, mkLambda (y, int_type, app))) in
-  CfgEditor.build_cfg parent Global.basic_env
+  let r = Id.of_string "r" in
+  let n' = Id.of_string "n" in
+  let env = Global.basic_env in
+  let env = env
+    |> MiniCic.Env.push_named (LocalAssum (x, int_type))
+    |> MiniCic.Env.push_named (LocalAssum (y, int_type))
+    |> MiniCic.Env.push_named (LocalAssum (z, int_type))
+    |> MiniCic.Env.push_named (LocalDef (r, app, int_type))
+    |> MiniCic.Env.push_named (LocalDef (n', n, int_type))
+  in
+  CfgEditor.build_cfg parent env
 

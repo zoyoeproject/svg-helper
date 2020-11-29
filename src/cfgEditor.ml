@@ -73,7 +73,7 @@ let build_cfg parent env =
   Id.Map.iter (fun id _ ->
     let name_info = lookup_named id env in
     match name_info with
-    | LocalDef (n,typ, body) ->
+    | LocalDef (n, body, typ) ->
        let from = aux inputs None body in
        let input = [| mk_param ("i", typ) from |] in
        let local_node = Node.mk_node (Id.to_string n) (mkVar n) input
