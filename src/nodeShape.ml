@@ -60,8 +60,7 @@ let set_output_ancher context item output =
 let draw_normal context parent node (cx, cy) (w,h) =
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
-  let text = Utils.mk_text "default" (x1, y1 - 2)
-    (Constant.to_string (fst (Constr.destConst node.src))) in
+  let text = Utils.mk_text "default" (x1, y1 - 2) (print_var node.src) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in

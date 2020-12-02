@@ -7,7 +7,7 @@ type node = Node.t DagreFFI.node_size
 
 type focus =
   | Connect of (Document.element * (Node.var * Constr.t))
-  | Create of (Document.element * (Names.Constant.t * Constr.t))
+  | Create of (Document.element * (Constr.t * Constr.t))
 
 type context_info = {
   mutable ssa_count: int;

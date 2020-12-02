@@ -7,6 +7,7 @@ let c_case = MiniCic.Names.Constant.make core_dir (MiniCic.Names.Label.of_string
 let build_cfg parent env =
   let open MiniCic.Names in
   let open MiniCic.Constr in
+  Js.log "build_cfg...";
   let ctxt = Context.init_context parent Context.NodeMap.empty in
   let rec aux input_map _ c : var option =
     match c with
@@ -71,6 +72,7 @@ let build_cfg parent env =
       | LocalDef _ -> (* local var or retrun var *) inputs
     ) env.env_named_context Id.Map.empty in
   Id.Map.iter (fun id _ ->
+    Js.log "id";
     let name_info = lookup_named id env in
     match name_info with
     | LocalDef (n, body, typ) ->
