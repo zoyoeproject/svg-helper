@@ -16,13 +16,9 @@ let draw_node context parent node =
   let center = (0, 0) in
   let sz = compute_size node in
   if is_var_node node then
-    match (Array.length node.inputs, Array.length node.outputs) with
-    | 0, 0 -> assert false
-    | _, 0 -> NodeShape.draw_output context parent node center sz
-    | 0, _ -> NodeShape.draw_input context parent node center sz
-    | _ -> NodeShape.draw_var context parent node center sz
+    NodeShape.draw_var context parent node center sz
   else
-    NodeShape.draw_normal context parent node center sz
+    NodeShape.draw_normal context parent node center sz false
 
 let draw_nodes svgele parent context =
   NodeMap.iter (fun node_name node ->

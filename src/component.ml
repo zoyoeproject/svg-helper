@@ -26,7 +26,11 @@ let constant_to_node (c, typ) node_name =
   Node.mk_node node_name (mkConst c) (Array.of_list args) [|Name.Anonymous, output_typ|]
 
 let var_to_node (id, typ) node_name =
-  Node.mk_node node_name (mkVar id) [||] [|Name.Name id, typ|]
+  let arg = Node.({
+    para_info = "i", Evar ("input_type", [||]);
+    input = None
+  }) in
+  Node.mk_node node_name (mkVar id) [|arg|] [|Name.Name id, typ|]
 
 let constr_to_node env c node_name =
   match c with
@@ -35,7 +39,7 @@ let constr_to_node env c node_name =
       let entry = MiniCic.Env.lookup_constant env c in
       constant_to_node (c, entry.entry_type) node_name
     end
-  | Var id -> var_to_node (id, Evar (1, [||])) node_name
+  | Var id -> var_to_node (id, Evar ("input_type", [||])) node_name
   | _ -> begin
       Js.log "false";
       assert false
@@ -51,32 +55,15 @@ type component_bar = {
 
 let font_size = 10
 
-let draw_node_as_tool parent node =
-  let (w,h) = compute_size node in
-  let (cx, cy) = (w/2 + 10, h/2 + 10 + font_size) in
-  let x1, y1 = cx - w/2, cy - h/2 in
-  let x2, _ = cx + w/2, cy + h/2 in
-  let text = Utils.mk_text "default" (x1, y1 - 2) (NodeShape.print_var node.src) in
-  ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
-  let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
-    let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
-    let _ = Circle.mk_circle_in parent "default" 3 (ax, ay) in
-    let name, _ = input.para_info in
-    let text = Utils.mk_text "default" (ax + 5, ay) name in
-    (svg^text, i + 1)
-  ) (text, 0) (node.inputs:param array) in
-  let txt, _ = Array.fold_left (fun (svg, i) _ ->
-    let _ = Circle.mk_circle_in parent "default" 3
-      (x2, (get_ancher y1 h (Array.length node.outputs) i))
-    in
-    (svg, i + 1)
-  ) (txt, 0) node.outputs in
-  ignore @@ Utils.mk_group_in parent None txt
+let draw_node_as_tool context parent node =
+  let center = (20, 30) in
+  let sz = compute_size node in
+  NodeShape.draw_normal context parent node center sz true
 
 let add_to_component_bar env context parent shift c =
  let node = constr_to_node env c "" in
  let node_ele = Utils.mk_group_in parent None "" in
- draw_node_as_tool node_ele node;
+ draw_node_as_tool context node_ele node;
  Document.setAttribute node_ele "class" "default";
  Utils.set_translate_matrix parent node_ele (!shift, 0);
  Utils.on_mouseclick_set node_ele (fun _ ->
@@ -93,7 +80,7 @@ let init_component_bar env context parent components =
   ConstantMap.iter (fun k t ->
     let node = constant_to_node (k, t) "" in
     let node_ele = Utils.mk_group_in parent None "" in
-    draw_node_as_tool node_ele node;
+    draw_node_as_tool context node_ele node;
     Document.setAttribute node_ele "class" "default";
     Utils.set_translate_matrix parent node_ele (!shift, 0);
     Utils.on_mouseclick_set node_ele (fun _ ->
