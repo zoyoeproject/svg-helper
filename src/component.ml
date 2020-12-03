@@ -58,22 +58,25 @@ let font_size = 10
 let draw_node_as_tool context parent node =
   let center = (20, 30) in
   let sz = compute_size node in
-  NodeShape.draw_normal context parent node center sz true
+  if (isVar node.src) then
+    NodeShape.draw_var context parent node center sz true
+  else
+    NodeShape.draw_normal context parent node center sz true
 
 let add_to_component_bar env context parent shift c =
- let node = constr_to_node env c "" in
- let node_ele = Utils.mk_group_in parent None "" in
- draw_node_as_tool context node_ele node;
- Document.setAttribute node_ele "class" "default";
- Utils.set_translate_matrix parent node_ele (!shift, 0);
- Utils.on_mouseclick_set node_ele (fun _ ->
-   if Context.toggle_focus context (Create (node_ele, (c, int_type))) then
-     Utils.set_cfg_cursor context.cfg_ele
-       (Document.outerHTML node_ele)
-   else
-     Utils.restore_cfg_cursor context.cfg_ele
- );
- shift := !shift + 40
+  let node = constr_to_node env c "" in
+  let node_ele = Utils.mk_group_in parent None "" in
+  draw_node_as_tool context node_ele node;
+  Document.setAttribute node_ele "class" "default";
+  Utils.set_translate_matrix parent node_ele (!shift, 0);
+  Utils.on_mouseclick_set node_ele (fun _ ->
+    if Context.toggle_focus context (Create (node_ele, (c, int_type))) then
+      Utils.set_cfg_cursor context.cfg_ele
+        (Document.outerHTML node_ele)
+    else
+      Utils.restore_cfg_cursor context.cfg_ele
+  );
+  shift := !shift + 40
 
 let init_component_bar env context parent components =
   let shift = ref 0 in
@@ -92,4 +95,4 @@ let init_component_bar env context parent components =
     );
     shift := !shift + 40
  ) components;
- add_to_component_bar env context parent shift (mkVar (Id.to_string "x"))
+ add_to_component_bar env context parent shift (mkVar (Id.to_string "var"))

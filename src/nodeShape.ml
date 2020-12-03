@@ -105,21 +105,15 @@ let draw_output context parent node (cx, cy) (w, h) =
   ) ("", 0) (node.inputs:param array) in
   ignore @@ Utils.mk_group_in parent None txt
 
-let draw_var context parent node (cx, cy) (w,h) =
+let draw_var context parent node (cx, cy) (w,h) as_tool =
   let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
+  let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin
       let input = node.inputs.(0) in
-      set_input_ancher context input circle
+      if (not as_tool) then set_input_ancher context input circle
   end;
-  let text = if (Array.length node.outputs != 0)
-    then
+  if (Array.length node.outputs != 0) then begin
       let (output, typ) =  node.outputs.(0) in
-      let text = match output with
-        | Name.Anonymous -> ""
-        | Name.Name id -> Utils.mk_text "default" (cx + w/2, cy - h/2) (Id.to_string id)
-      in
-      set_output_ancher context circle (Node.mk_path node.name output, typ);
-      text
-    else ""
-  in
+      if (not as_tool) then set_output_ancher context circle (Node.mk_path node.name output, typ)
+  end;
   ignore @@ Utils.mk_group_in parent None text

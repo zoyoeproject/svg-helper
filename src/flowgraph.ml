@@ -16,7 +16,7 @@ let draw_node context parent node =
   let center = (0, 0) in
   let sz = compute_size node in
   if is_var_node node then
-    NodeShape.draw_var context parent node center sz
+    NodeShape.draw_var context parent node center sz false
   else
     NodeShape.draw_normal context parent node center sz false
 
