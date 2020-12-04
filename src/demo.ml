@@ -1,12 +1,9 @@
-open MiniCic.Names
-open Global
-open MiniCic.CoreType
-module Constr = MiniCic.Constr
-
-let c_demo = Constr.mkConst @@ Constant.make ModPath.initial (Label.of_string "demo")
 
 let get_demo_env () =
-  let open Constr in
+  let open MiniCic.CoreType in
+  let open Global in
+  let open MiniCic.Names in
+  let open MiniCic.Constr in
   let x = Id.of_string "x" in
   let y = Id.of_string "y" in
   let z = Id.of_string "z" in
