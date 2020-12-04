@@ -5,14 +5,7 @@ module Constr = MiniCic.Constr
 
 let c_demo = Constr.mkConst @@ Constant.make ModPath.initial (Label.of_string "demo")
 
-let demo_component context parent =
-  let env = Global.basic_env in
-  let components = Component.mk_constant_map () in
-  let components = Component.add_constant components (c_plus, int_bop_type) in
-  let components = Component.add_constant components (c_minus, int_bop_type) in
-  Component.init_component_bar env context parent components
-
-let init_context_with_constr parent =
+let get_demo_env () =
   let open Constr in
   let x = Id.of_string "x" in
   let y = Id.of_string "y" in
@@ -29,7 +22,7 @@ let init_context_with_constr parent =
     |> MiniCic.Env.push_named (LocalAssum (z, int_type))
     |> MiniCic.Env.push_named (LocalDef (r, app, int_type))
     |> MiniCic.Env.push_named (LocalDef (n', n, int_type))
-  in
-  let context = CfgEditor.build_cfg parent env in
-  Flowgraph.init_flowgraph env context parent;
-  context
+  in env
+
+let display_env_as_cfg tool_div parent env =
+  ignore @@ CfgEditor.build_cfg tool_div parent env

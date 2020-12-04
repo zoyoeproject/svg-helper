@@ -4,11 +4,11 @@ open MiniCic.CoreType
 (* FIXME! how to make prod? *)
 let c_case = MiniCic.Names.Constant.make core_dir (MiniCic.Names.Label.of_string "case")
 
-let build_cfg parent env =
+let build_cfg tool_div parent_div env =
   let open MiniCic.Names in
   let open MiniCic.Constr in
   Js.log "build_cfg...";
-  let ctxt = Context.init_context parent Context.NodeMap.empty in
+  let ctxt = Context.init_context parent_div Context.NodeMap.empty in
   let rec aux input_map _ c : var option =
     match c with
     | App (c, l) ->
@@ -86,5 +86,8 @@ let build_cfg parent env =
   ) env.env_named_context;
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes;
-  ctxt
-
+  Flowgraph.init_flowgraph env ctxt parent_div;
+  let components = fold_constants (fun c _ t acc ->
+    Component.add_constant acc (c, t)
+  ) (Component.mk_constant_map ()) env in
+  Component.init_component_bar env ctxt tool_div components
