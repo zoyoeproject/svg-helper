@@ -5,9 +5,18 @@ module Constr = MiniCic.Constr
 type node_map = (Node.t DagreFFI.node_size) NodeMap.t
 type node = Node.t DagreFFI.node_size
 
+type constr_promise = (Constr.t -> unit) -> unit
+
+type constr_encoder = string array -> Constr.t
+
+type prompt_info = {
+  label: string;
+  info: string;
+}
+
 type focus =
   | Connect of (Document.element * (Node.var * Constr.t))
-  | Create of (Document.element * (Constr.t * Constr.t))
+  | Create of (Document.element * (constr_promise * Constr.t))
 
 type context_info = {
   mutable ssa_count: int;
@@ -15,7 +24,16 @@ type context_info = {
   mutable focus: focus option;
   mutable cfg_ele: Document.element;
   mutable nodes: (Node.t DagreFFI.node_size) NodeMap.t;
+  mutable prompt: prompt_info array -> (string array -> unit) -> unit;
 }
+
+let mk_var_promise context f =
+  context.prompt [| {label="var name"; info="text"} |] (fun args ->
+    f (Constr.mkVar (Names.Id.to_string args.(0)))
+  )
+
+let mk_constant_promise context c f =
+  f c
 
 let new_ssa ctxt =
   ctxt.ssa_count <- ctxt.ssa_count + 1;
@@ -84,7 +102,7 @@ let init_layout graph nodes =
   build_edges graph nodes;
   DagreFFI.layout graph
 
-let init_context parent nodes =
+let init_context prompt parent nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes;
   let context = {
@@ -92,5 +110,6 @@ let init_context parent nodes =
     cfg_ele = parent;
     dragdrop = None;
     focus = None;
-    nodes = nodes
+    nodes = nodes;
+    prompt = prompt;
   } in context

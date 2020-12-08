@@ -21,5 +21,5 @@ let get_demo_env () =
     |> MiniCic.Env.push_named (LocalDef (n', n, int_type))
   in env
 
-let display_env_as_cfg tool_div parent env =
-  ignore @@ CfgEditor.build_cfg tool_div parent env
+let display_env_as_cfg prompt tool_div parent env =
+  ignore @@ CfgEditor.build_cfg prompt tool_div parent env

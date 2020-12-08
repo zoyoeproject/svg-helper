@@ -69,8 +69,11 @@ let add_to_component_bar env context parent shift c =
   draw_node_as_tool context node_ele node;
   Document.setAttribute node_ele "class" "default";
   Utils.set_translate_matrix parent node_ele (!shift, 0);
+  let prompt = Context.mk_var_promise context in
   Utils.on_mouseclick_set node_ele (fun _ ->
-    if Context.toggle_focus context (Create (node_ele, (c, int_type))) then
+    if Context.toggle_focus context
+      (Create (node_ele, (prompt, int_type)))
+    then
       Utils.set_cfg_cursor context.cfg_ele
         (Document.outerHTML node_ele)
     else
@@ -83,11 +86,12 @@ let init_component_bar env context parent components =
   ConstantMap.iter (fun k t ->
     let node = constant_to_node (k, t) "" in
     let node_ele = Utils.mk_group_in parent None "" in
+    let prompt = Context.mk_constant_promise context (mkConst k) in
     draw_node_as_tool context node_ele node;
     Document.setAttribute node_ele "class" "default";
     Utils.set_translate_matrix parent node_ele (!shift, 0);
     Utils.on_mouseclick_set node_ele (fun _ ->
-      if Context.toggle_focus context (Create (node_ele, (mkConst k, t))) then
+      if Context.toggle_focus context (Create (node_ele, (prompt, t))) then
         Utils.set_cfg_cursor context.cfg_ele
           (Document.outerHTML node_ele)
       else

@@ -4,11 +4,11 @@ open MiniCic.CoreType
 (* FIXME! how to make prod? *)
 let c_case = MiniCic.Names.Constant.make core_dir (MiniCic.Names.Label.of_string "case")
 
-let build_cfg tool_div parent_div env =
+let build_cfg prompt tool_div parent_div env =
   let open MiniCic.Names in
   let open MiniCic.Constr in
   Js.log "build_cfg...";
-  let ctxt = Context.init_context parent_div Context.NodeMap.empty in
+  let ctxt = Context.init_context prompt parent_div Context.NodeMap.empty in
   let rec aux input_map _ c : var option =
     match c with
     | App (c, l) ->

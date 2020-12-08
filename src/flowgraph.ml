@@ -52,12 +52,13 @@ let init_flowgraph env context svgele =
   ignore @@ Utils.mk_group_in all (Some "edges") (NodeShape.draw_edges context.nodes);
   Utils.on_mouseclick_set svgele (fun e ->
     match Context.get_focus_create context with
-    | Some (c, t) -> begin
-        Context.clear_focus context;
-        Utils.restore_cfg_cursor context.cfg_ele;
-        let node = Component.constr_to_node env c (Context.new_ssa context) in
-        add_node context node Document.(e.offsetX, e.offsetY);
-        ()
+    | Some (promise, t) -> begin
+        promise (fun c ->
+          Context.clear_focus context;
+          Utils.restore_cfg_cursor context.cfg_ele;
+          let node = Component.constr_to_node env c (Context.new_ssa context) in
+          add_node context node Document.(e.offsetX, e.offsetY)
+        )
       end
     | _ -> ()
   )

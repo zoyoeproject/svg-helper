@@ -1,6 +1,5 @@
 type dom
 type element
-type daoism
 type style
 
 external document : dom = "document" [@@bs.val]
