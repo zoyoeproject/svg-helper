@@ -24,6 +24,10 @@ let set_translate_matrix parent item (x, y) =
 let mk_use svgname (x, y) =
   Printf.sprintf "<use href='#%s' x='%d' y='%d' width='30' height='30'/>" svgname x y
 
+
+let on_mousedoubleclick_set item call_back =
+  Document.add_event_listener item "dblclick" call_back
+
 let on_mouseclick_set item call_back =
   Document.add_event_listener item "click" call_back
 

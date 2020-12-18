@@ -37,16 +37,28 @@ let draw_edges (nodes:node_map) =
     svg ^ edges
   ) nodes ""
 
-let set_input_ancher context input item =
+let set_input_ancher context node_name input item =
+  Utils.on_mousedoubleclick_set item (fun _ ->
+    let _  = match input.input with
+    | Some _ -> input.input <- None
+    | _ -> ()
+    in
+    let edges = Document.get_by_id Document.document "edges" in
+    Document.setInnerHTML edges (draw_edges context.nodes)
+  );
   Utils.on_mouseclick_set item (fun _ ->
     let _  = match input.input with
     | None -> begin
       match Context.get_focus_connect context with
-        | Some (path, typ) ->
-          input.input <- Some path
+        | Some (PATH (path, na) , typ) when path != node_name ->
+          Js.log path;
+          Js.log node_name;
+          input.input <- Some (PATH (path, na))
+        | Some (VAR n, _) ->
+          input.input <- Some (VAR n)
         | _ -> ()
       end
-    | _ -> Js.log "input"; ()
+    | _ -> ()
     in
     let edges = Document.get_by_id Document.document "edges" in
     Document.setInnerHTML edges (draw_edges context.nodes)
@@ -67,7 +79,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
     let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (ax + 5, ay + 2) name in
-    if (not as_tool) then set_input_ancher context input circle;
+    if (not as_tool) then set_input_ancher context node.name input circle;
     (svg^text, i + 1)
   ) (text, 0) (node.inputs:param array) in
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
@@ -100,7 +112,7 @@ let draw_output context parent node (cx, cy) (w, h) =
     let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (cx - w/2 , cy - h/2) name in
-    set_input_ancher context input circle;
+    set_input_ancher context node.name input circle;
     (svg^text, i + 1)
   ) ("", 0) (node.inputs:param array) in
   ignore @@ Utils.mk_group_in parent None txt
@@ -110,7 +122,7 @@ let draw_var context parent node (cx, cy) (w,h) as_tool =
   let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin
       let input = node.inputs.(0) in
-      if (not as_tool) then set_input_ancher context input circle
+      if (not as_tool) then set_input_ancher context node.name input circle
   end;
   if (Array.length node.outputs != 0) then begin
       let (output, typ) =  node.outputs.(0) in
