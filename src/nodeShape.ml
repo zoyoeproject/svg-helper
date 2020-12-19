@@ -50,7 +50,7 @@ let set_input_ancher context node_name input item =
     let _  = match input.input with
     | None -> begin
       match Context.get_focus_connect context with
-        | Some (PATH (path, na) , typ) when path != node_name ->
+        | Some (PATH (path, na) , _ (*typ*)) when path != node_name ->
           Js.log path;
           Js.log node_name;
           input.input <- Some (PATH (path, na))
@@ -117,7 +117,7 @@ let draw_output context parent node (cx, cy) (w, h) =
   ) ("", 0) (node.inputs:param array) in
   ignore @@ Utils.mk_group_in parent None txt
 
-let draw_var context parent node (cx, cy) (w,h) as_tool =
+let draw_var context parent node (cx, cy) (w,_) as_tool =
   let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
   let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin
