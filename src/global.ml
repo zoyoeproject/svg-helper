@@ -23,8 +23,8 @@ let bool_ind = MiniCic.Mind.mk_enum_body (Id.of_string "bool")
 let basic_env =
   let env = MiniCic.Env.empty_env in
   env
-  |> MiniCic.Env.add_constant c_plus None int_bop_type
-  |> MiniCic.Env.add_constant c_minus None int_bop_type
+  |> MiniCic.Env.add_constant c_plus None int_bop_type [|Name.Anonymous|]
+  |> MiniCic.Env.add_constant c_minus None int_bop_type [|Name.Anonymous|]
   |> MiniCic.Env.add_mutind i_bool bool_ind
 
 let bool_case_info env = MiniCic.Env.get_case_info env (i_bool, 0)
