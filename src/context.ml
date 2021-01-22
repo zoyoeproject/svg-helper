@@ -119,14 +119,26 @@ let init_layout graph nodes =
   build_edges graph nodes;
   DagreFFI.layout graph
 
+let global_ctxt = ref None
+
+let get_global_context () =
+  match !global_ctxt with
+  | None -> (
+    Js.log "global context hasn't been init";
+    assert false
+  )
+  | Some ctxt ->
+    ctxt
+
 let init_context prompt parent nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes;
-  let context = {
+  global_ctxt := Some {
     ssa_count = 0;
     cfg_ele = parent;
     dragdrop = None;
     focus = None;
     nodes = nodes;
     prompt = prompt;
-  } in context
+  };
+  get_global_context()

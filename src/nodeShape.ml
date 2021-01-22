@@ -9,6 +9,8 @@ let print_var = function
   | Var id -> Id.to_string id
   | Const (c, _) -> Constant.to_string c
   | Int i -> string_of_int i
+  | App (Const (c, _), [||]) -> Constant.to_string c
+  | Case _ -> "case"
   | _ -> assert false
 
 let draw_edges (nodes:node_map) =
