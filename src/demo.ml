@@ -22,6 +22,7 @@ let get_demo_env () =
     |> MiniCic.Env.push_named (LocalDef (r, app, int_type))
     |> MiniCic.Env.push_named (LocalDef (n', n, int_type))
     |> MiniCic.Env.push_named (LocalAssum (cond, bool_type))
+    |> MiniCic.Env.export n'
   in env
 
 let display_env_as_cfg prompt tool_div parent env =

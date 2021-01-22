@@ -13,14 +13,16 @@ type t = {
   name: string;
   mutable src: Constr.t;
   inputs: param array;
-  outputs: (Names.Name.t * Constr.t) array;
+  outputs: (Names.Name.t * Constr.t) array; (* ret name, ret type *)
+  export: bool;
 }
 
 let mk_path a b = PATH (a,b)
 let mk_var a = VAR a
 let mk_param info input = {para_info = info; input = input}
 
-let mk_node name src inputs outputs = {name=name; src=src; inputs=inputs; outputs=outputs}
+let mk_node name src inputs outputs = {name=name; src=src; inputs=inputs; outputs=outputs; export=false}
+let mk_node_export name src inputs outputs = {name=name; src=src; inputs=inputs; outputs=outputs; export=true}
 
 let default_node_height = 40
 
