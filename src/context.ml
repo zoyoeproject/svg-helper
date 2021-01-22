@@ -47,28 +47,45 @@ let option_map f = function
   | Some a -> Some (f a)
   | None -> None
 
+let add_class style x : string =
+  String.concat " " [ x; style ]
+
+let remove_calss style x : string =
+  let styles = String.split_on_char ' ' style in
+  let styles = List.filter (fun t -> t <> x && t <> "") styles in
+  String.concat " " styles
+
 let toggle_focus context focus =
   let fele = get_focus_element focus in
   match option_map get_focus_element context.focus with
   | Some f -> begin
-      Document.setAttribute f "class" "default";
+      let style = Document.getAttribute f "class" in
+      let style = remove_calss style "focus" in
+      Document.setAttribute f "class" style;
       if (f == fele) then
         begin context.focus <- None; false end
       else begin
+        let style = Document.getAttribute fele "class" in
+        let style = add_class style "focus" in
+        Document.setAttribute fele "class" style;
         context.focus <- Some focus;
-        Document.setAttribute fele "class" "focus";
         true
       end
     end
   | _ -> begin
       context.focus <- Some focus;
-      Document.setAttribute fele "class" "focus";
+      let style = Document.getAttribute fele "class" in
+      let style = add_class style "focus" in
+      Document.setAttribute fele "class" style;
       true
     end
 
 let clear_focus context =
   let _ = match option_map get_focus_element context.focus with
-  | Some f -> Document.setAttribute f "class" "default";
+  | Some f ->
+    let style = Document.getAttribute f "class" in
+    let style = remove_calss style "focus" in
+    Document.setAttribute f "class" style;
   | _ -> ()
   in
   context.focus <- None
