@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "sources": [
   {
-    "dir" : "src",
+    "dir" : "src"
   }
   ],
   "package-specs": {
@@ -17,7 +17,6 @@
     "bs-webapi",
     "mini-cic",
   ],
-
   "warnings": {
     "error" : "+101"
   },

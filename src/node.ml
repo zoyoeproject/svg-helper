@@ -1,7 +1,8 @@
 open MiniCic
+
 type var =
   | VAR of Constr.t
-  | PATH of string * Names.Name.t
+  | PATH of string * Names.Name.t (* node name, ret name *)
 
 type param = {
   para_info: (string * Constr.t); (* Name, Type *)
@@ -62,4 +63,3 @@ let find_output_idx x node: int =
     | h :: t -> if x = fst h then 0 else 1 + find_idx t
   in
   find_idx (Array.to_list node.outputs)
-
