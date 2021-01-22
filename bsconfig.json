@@ -16,6 +16,7 @@
   "bs-dependencies": [
     "bs-webapi",
     "mini-cic",
+    "@glennsl/bs-json"
   ],
   "warnings": {
     "error" : "+101"

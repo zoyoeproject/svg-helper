@@ -25,6 +25,7 @@
     "webpack-dev-server": "^3.10.3"
   },
   "dependencies": {
+    "@glennsl/bs-json": "^5.0.2",
     "dagre": "^0.8.5",
     "mini-cic": "git+https://github.com/zoyoeproject/daoism-cic.git"
   }
