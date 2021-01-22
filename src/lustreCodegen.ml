@@ -81,6 +81,9 @@ let to_notation name =
   | "lt" -> "<"
   | "gt" -> ">"
   | "not" -> "not"
+  | "mult" -> "*"
+  | "div" -> "div"
+  | "mod" -> "mod"
   | _ -> assert false
 
 let generate_expr c =
