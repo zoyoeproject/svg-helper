@@ -23,7 +23,7 @@ let rec collect_params acc c =
 
 let constant_to_node (c, typ) node_name =
   let args, output_typ = collect_params [] typ in
-  Node.mk_node node_name (App (c, [||])) (Array.of_list args) [|Name.Anonymous, output_typ|]
+  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) [|Name.Anonymous, output_typ|]
 
 let var_to_node (id, typ) node_name =
   let arg = Node.({
