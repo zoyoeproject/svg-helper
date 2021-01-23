@@ -197,7 +197,7 @@ let build_cfg prompt tool_div parent_div env =
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes;
   Flowgraph.init_flowgraph env ctxt parent_div;
-  let components = MiniCic.Env.fold_constants (fun c _ t acc ->
-    Component.add_constant acc (c, t)
+  let components = MiniCic.Env.fold_constants (fun c e acc ->
+    Component.add_constant acc (c, e)
   ) (Component.mk_constant_map ()) env in
   Component.init_component_bar env ctxt tool_div components
