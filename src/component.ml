@@ -33,6 +33,14 @@ let constant_to_node (c, typ, info) node_name =
   let outputs = collect_outputs info 0 [] output_typ in
   Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs)
 
+let constant_to_node_with_params (c, typ, info) node_name params =
+  let args, output_typ = collect_params [] typ in
+  let args = List.mapi (fun i arg ->
+    Node.({arg with input = params.(i)})
+  ) args in
+  let outputs = collect_outputs info 0 [] output_typ in
+  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs)
+
 let var_to_node (id, typ) node_name =
   let arg = Node.({
     para_info = "i", Evar ("input_type", [||]);

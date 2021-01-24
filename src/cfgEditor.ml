@@ -11,21 +11,29 @@ let c_case = MiniCic.Names.Constant.make core_dir (MiniCic.Names.Label.of_string
 let generate_context_from_env prompt parent_div env =
   Js.log "build_cfg...";
   let ctxt = Context.init_context prompt parent_div Context.NodeMap.empty in
-  let rec aux input_map _ c : var option =
+  (*
+   * TODO we need to make sure c is a closed term
+   * If c is not closed than we need to fill make it closed using
+   * lambda x, c x
+   *)
+  let rec aux input_map idx c : var option =
     match c with
-    | App (c, l) ->
-      let inputs = Array.mapi (fun i c ->
-        let input = aux input_map None c in
-        let input_type = MiniCic.Retype.type_of env c in
-        mk_param ("i" ^ (string_of_int i), input_type) input
+    | App (c, l) when c = fst_const ->
+      aux input_map idx l.(2)
+    | App (c, l) when c = snd_const ->
+      aux input_map (idx+1) l.(2)
+    | App (c, l) when isConst c ->
+      let inputs = Array.map (fun c ->
+        aux input_map 0 c
       ) l in
+      let c = fst (destConst c) in
+      let entry = MiniCic.Env.lookup_constant env c in
       let node_name = Context.new_ssa ctxt in
-      let ret_name = Name.Anonymous in
-      let ret_type = MiniCic.Retype.type_of env c in
-      let node = Node.mk_node node_name (App (c, [||])) inputs [|ret_name, ret_type|] in
-      (* Name.mk_name *)
+      let node = Component.constant_to_node_with_params
+        (c, entry.entry_type, entry.info) node_name inputs
+      in
       ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
-      Some (mk_path node_name ret_name)
+      Some (mk_path node_name entry.info.(idx))
     | Int _ -> Some (mk_var c)
     | Var name -> begin
         let name_info = MiniCic.Env.lookup_named name env in
@@ -38,10 +46,10 @@ let generate_context_from_env prompt parent_div env =
             Id.Map.find id input_map
       end
     | Case (ci, typ, cond, args) ->
-      let cond_input = aux input_map None cond in
+      let cond_input = aux input_map 0 cond in
       let cond_para = mk_param ("cond", bool_type) cond_input in
       let branch_inputs = Array.mapi (fun i c ->
-          let input = aux input_map None c in
+          let input = aux input_map 0 c in
           let input_type = MiniCic.Retype.type_of env c in
            mk_param ("i"^string_of_int i, input_type) input
         ) args in
@@ -54,11 +62,15 @@ let generate_context_from_env prompt parent_div env =
       ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
       Some (mk_path node_name ret_name)
     | _ ->
-      fold_with_full_binders push_local_def aux input_map None c
+      (* FIXME: This is not right *)
+      assert false
+      (* fold_with_full_binders push_local_def aux input_map 0 c*)
+
   and push_local_def c input_map  = match c with
     | LocalDef (_, _, _) -> input_map
     | LocalAssum (_, _) -> input_map
   in
+
   let inputs = Id.Map.fold (fun _ v inputs ->
       match v with
       | LocalAssum (id, t) ->
@@ -75,7 +87,7 @@ let generate_context_from_env prompt parent_div env =
     let name_info = MiniCic.Env.lookup_named id env in
     match name_info with
     | LocalDef (id, body, typ) ->
-        let from = aux inputs None body in
+        let from = aux inputs 0 body in
         let input = [| mk_param ("i", typ) from |] in
         let local_node =
           if MiniCic.Env.is_exported id env
