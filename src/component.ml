@@ -17,7 +17,7 @@ let rec collect_outputs info idx acc c =
   let open MiniCic.Constr in
   match c with
   | App (f, [|a; b|]) when f = prod_type ->
-    collect_outputs info (idx+1) (acc @ [info.(idx), a]) c
+    collect_outputs info (idx+1) (acc @ [info.(idx), a]) b
   | _ -> acc @ [info.(idx), c]
 
 let rec collect_params acc c =
