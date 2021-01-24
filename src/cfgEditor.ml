@@ -8,16 +8,19 @@ open MiniCic.Prod
 (* FIXME! how to make prod? *)
 let c_case = MiniCic.Names.Constant.make core_dir (MiniCic.Names.Label.of_string "case")
 
+module ConstrMap = Map.Make(MiniCic.Constr)
+
 let generate_context_from_env prompt parent_div env =
   Js.log "build_cfg...";
+  let constr_map = ref ConstrMap.empty in
   let ctxt = Context.init_context prompt parent_div Context.NodeMap.empty in
   (*
    * TODO we need to make sure c is a closed term
    * If c is not closed than we need to fill make it closed using
    * lambda x, c x
    *)
-  let rec aux input_map idx c : var option =
-    match c with
+  let rec aux input_map idx e : var option =
+    match e with
     | App (c, l) when c = fst_const ->
       aux input_map idx l.(2)
     | App (c, l) when c = snd_const ->
@@ -28,13 +31,20 @@ let generate_context_from_env prompt parent_div env =
       ) l in
       let c = fst (destConst c) in
       let entry = MiniCic.Env.lookup_constant env c in
-      let node_name = Context.new_ssa ctxt in
-      let node = Component.constant_to_node_with_params
-        (c, entry.entry_type, entry.info) node_name inputs
+      let node_name = match ConstrMap.find_opt e !constr_map with
+        | Some name -> name
+        | None -> begin
+            let node_name = Context.new_ssa ctxt in
+            let node = Component.constant_to_node_with_params
+              (c, entry.entry_type, entry.info) node_name inputs
+            in
+            ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
+            constr_map := ConstrMap.add e node_name !constr_map;
+            node_name
+          end
       in
-      ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
       Some (mk_path node_name entry.info.(idx))
-    | Int _ -> Some (mk_var c)
+    | Int _ -> Some (mk_var e)
     | Var name -> begin
         let name_info = MiniCic.Env.lookup_named name env in
         match name_info with
