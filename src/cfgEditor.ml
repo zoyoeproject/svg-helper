@@ -43,14 +43,14 @@ let generate_context_from_env prompt parent_div env =
             node_name
           end
       in
-      Some (mk_path node_name entry.info.(idx))
+      Some (mk_path node_name entry.info.(idx) true)
     | Int _ -> Some (mk_var e)
     | Var name -> begin
         let name_info = MiniCic.Env.lookup_named name env in
         match name_info with
         | LocalDef (id, _, _) ->
             let name = Id.to_string id in
-            let path = Some (mk_path name (Name id)) in
+            let path = Some (mk_path name (Name id) true) in
             path
         | LocalAssum (id,_) -> (* mk_var c *)
             Id.Map.find id input_map
@@ -70,7 +70,7 @@ let generate_context_from_env prompt parent_div env =
       let node = Node.mk_node node_name (Case (ci, typ, cond, [||]))
         inputs [|ret_name, ret_type|] in
       ctxt.nodes <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes;
-      Some (mk_path node_name ret_name)
+      Some (mk_path node_name ret_name true)
     | _ ->
       (* FIXME: This is not right *)
       assert false
@@ -89,7 +89,7 @@ let generate_context_from_env prompt parent_div env =
         let input = Node.mk_node name (mkVar id)
           [||] [|ret_name, t|] in
         ctxt.nodes <- Context.NodeMap.add name (mk_graph_node input) ctxt.nodes;
-        Id.Map.add id (Some (mk_path name ret_name)) inputs
+        Id.Map.add id (Some (mk_path name ret_name true)) inputs
       | LocalDef _ -> (* local var or retrun var *) inputs
     ) env.env_named_context Id.Map.empty in
   Id.Map.iter (fun id _ ->
@@ -166,8 +166,8 @@ let generate_env_from_node_map (node_map: Context.node_map) default_env =
         let body, env =
           match param.input with
           | None -> assert false
-          | Some (VAR c) -> c, env
-          | Some (PATH (in_node_name, ret_name)) ->
+          | Some (VAR (c, _)) -> c, env
+          | Some (PATH (in_node_name, ret_name, _)) ->
             let in_graph_node = Context.NodeMap.find in_node_name node_map in
             let body, env = aux in_graph_node env in
             let tuple_index, tuple_type_list =
@@ -211,7 +211,7 @@ let generate_env_from_node_map (node_map: Context.node_map) default_env =
   Context.NodeMap.fold (fun _ node env ->
     let _, env = aux node env in
     env
-  ) node_map env
+  ) node_map env 
 
 let build_cfg prompt tool_div parent_div env =
   Js.log env;

@@ -1,8 +1,8 @@
 open MiniCic
 
 type var =
-  | VAR of Constr.t
-  | PATH of string * Names.Name.t (* node name, ret name *)
+  | VAR of Constr.t * bool
+  | PATH of string * Names.Name.t * bool (* node name, ret name, type_checked *)
 
 type param = {
   para_info: (string * Constr.t); (* Name, Type *)
@@ -17,8 +17,8 @@ type t = {
   export: bool;
 }
 
-let mk_path a b = PATH (a,b)
-let mk_var a = VAR a
+let mk_path a b c = PATH (a,b,true)
+let mk_var a = VAR (a,true)
 let mk_param info input = {para_info = info; input = input}
 
 let mk_node name src inputs outputs = {name=name; src=src; inputs=inputs; outputs=outputs; export=false}

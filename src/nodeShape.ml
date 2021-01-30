@@ -18,17 +18,19 @@ let draw_edges (nodes:node_map) =
     let edges, _ = Array.fold_left (fun ((svg:string), i) param ->
       let ix, iy = get_input_ancher node i in
       match param.input with
-      | Some (PATH (n, output)) -> begin
+      | Some (PATH (n, output, type_safe)) -> begin
+        let style = if type_safe then "default-line" else "error-line" in
         let src_node = NodeMap.find n nodes in
         let out_idx = find_output_idx output (DagreFFI.extract src_node) in
         let ox, oy = get_output_ancher src_node out_idx in
-        let svg = svg ^ Arc.connect_horizontal "default-line"
+        let svg = svg ^ Arc.connect_horizontal style
             (Js.Int.toFloat ix, Js.Int.toFloat iy)
             (Js.Int.toFloat ox, Js.Int.toFloat oy) in
         (svg, i+1)
         end
-      | Some (VAR n)-> begin
-        let svg = svg ^ Arc.connect_horizontal "default-line"
+      | Some (VAR (n, type_safe))-> begin
+        let style = if type_safe then "default-line" else "error-line" in
+        let svg = svg ^ Arc.connect_horizontal style
             (Js.Int.toFloat (ix - 30), Js.Int.toFloat iy)
             (Js.Int.toFloat ix, Js.Int.toFloat iy) in
         let svg = svg ^ Utils.mk_text "default" (ix-30, iy-input_padding) (print_var n) in
@@ -49,15 +51,16 @@ let set_input_ancher context node_name input item =
     Document.setInnerHTML edges (draw_edges context.nodes)
   );
   Utils.on_mouseclick_set item (fun _ ->
+    let _, in_type = input.para_info in
     let _  = match input.input with
     | None -> begin
       match Context.get_focus_connect context with
-        | Some (PATH (path, na) , _ (*typ*)) when path != node_name ->
-          Js.log path;
-          Js.log node_name;
-          input.input <- Some (PATH (path, na))
-        | Some (VAR n, _) ->
-          input.input <- Some (VAR n)
+        | Some (PATH (focused_node_name, na, _) , out_type (*typ*)) when focused_node_name != node_name ->
+          Js.log focused_node_name;
+          Js.log na;
+          input.input <- Some (PATH (focused_node_name, na, Constr.compare in_type out_type = 0))
+        | Some (VAR (n, _), out_type) ->
+          input.input <- Some (VAR (n, Constr.compare in_type out_type = 0))
         | _ -> ()
       end
     | _ -> ()
@@ -92,7 +95,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
       | Name.Name id -> Utils.mk_text "default" (ax + 5, ay + 2) (Id.to_string id)
     in
     if (not as_tool) then
-      set_output_ancher context circle (Node.mk_path node.name output, typ);
+      set_output_ancher context circle (Node.mk_path node.name output false, typ);
     (svg ^ text, i + 1)
   ) (txt, 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
@@ -104,7 +107,7 @@ let draw_input context parent node (cx, cy) (w, h) =
       | Name.Anonymous -> ""
       | Name.Name id -> Utils.mk_text "default" (cx + w/2, cy - h/2) (Id.to_string id)
     in
-    set_output_ancher context circle (Node.mk_path node.name output, typ);
+    set_output_ancher context circle (Node.mk_path node.name output false, typ);
     (svg ^ text, i + 1)
   ) ("", 0) node.outputs in
   ignore @@ Utils.mk_group_in parent None txt
@@ -129,6 +132,6 @@ let draw_var context parent node (cx, cy) (w,_) as_tool =
   end;
   if (Array.length node.outputs != 0) then begin
       let (output, typ) =  node.outputs.(0) in
-      if (not as_tool) then set_output_ancher context circle (Node.mk_path node.name output, typ)
+      if (not as_tool) then set_output_ancher context circle (Node.mk_path node.name output false, typ)
   end;
   ignore @@ Utils.mk_group_in parent None text

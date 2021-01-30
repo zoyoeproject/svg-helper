@@ -107,7 +107,7 @@ let build_edges graph nodes =
     let src = name in
     Array.iter (fun param ->
       match param.input with
-      | Some (PATH (node_name, _)) -> DagreFFI.add_edge graph node_name src
+      | Some (PATH (node_name, _, _)) -> DagreFFI.add_edge graph node_name src
       | _ -> ()
     ) node.inputs
   ) nodes
