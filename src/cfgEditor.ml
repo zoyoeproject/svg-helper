@@ -137,6 +137,8 @@ let rec mk_select_with_type_list type_list k e =
     mkApp (fst_const, [| t1; t2; e |])
   | [ t1; t2 ] when k == 1 ->
     mkApp (snd_const, [| t1; t2; e |])
+  | t :: tl when k = 0 ->
+    mkApp (fst_const, [| t; mk_prod_type tl; e |])
   | t :: tl when k < List.length type_list ->
       let e = mk_select_with_type_list tl (k - 1) e in
       mkApp (snd_const, [| t; mk_prod_type tl; e |])
