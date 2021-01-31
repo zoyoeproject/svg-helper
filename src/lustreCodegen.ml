@@ -2,6 +2,7 @@ open MiniCic.Constr
 open MiniCic.Names
 open MiniCic.Env
 open MiniCic.Context.Named.Declaration
+open MiniCic.CoreType
 
 type declare_unit = {
   name: string;
@@ -87,10 +88,10 @@ let to_notation name =
   | _ -> assert false
 
 let is_const_fst c =
-  unit_to_string c = "fst"
+  (compare c fst_const) = 0
 
 let is_const_snd c =
-  unit_to_string c = "snd"
+  (compare c snd_const) = 0
 
 let generate_expr c =
   let dependency = ref Id.Set.empty in
