@@ -107,7 +107,9 @@ let rec map_select_inner f c =
   | App (op, [|t1; t2; inner|]) when is_const_fst op || is_const_snd op ->
       let inner' = map_select_inner f inner in
       if inner' == inner then c else App (op, [|t1; t2; inner'|])
-  | _ -> f c
+  | _ ->
+      let c' = f c in
+      if c' == c then c else c'
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 module IntSet = Set.Make (MiniCic.Int)
@@ -145,13 +147,13 @@ let add_temp_var_for_multi_ret env =
             let id = gen_name () in
             multi_ret_map := ConstrMap.add c id !multi_ret_map ;
             let _, t, _ = parse_select c in
-            env' := push_named (LocalDef (id, t, c)) !env' ;
+            env' := push_named (LocalDef (id, c, t)) !env' ;
             mkVar id )
         else MiniCic.Constr.map aux c
       in
       let body' = map_select_inner aux body in
       if body == body' then ()
-      else env' := push_named (LocalDef (id, t, body)) !env' )
+      else env' := push_named (LocalDef (id, body, t)) !env' )
     id_body_list ;
   (* For other leaked returns. *)
   let tuple_map =
@@ -179,7 +181,7 @@ let add_temp_var_for_multi_ret env =
             else
               let body = mk_select_with_type_list tl idx tuple_body in
               let id = gen_name () in
-              env' := push_named (LocalDef (id, t, body)) !env' ;
+              env' := push_named (LocalDef (id, body, t)) !env' ;
               idx + 1 )
           0 tl
       in
