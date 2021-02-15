@@ -152,8 +152,10 @@ let add_temp_var_for_multi_ret env =
         else MiniCic.Constr.map aux c
       in
       let body' = map_select_inner aux body in
-      if body == body' then ()
-      else env' := push_named (LocalDef (id, body, t)) !env' )
+      if MiniCic.Constr.compare body body' <> 0 then
+        env' := push_named (LocalDef (id, body', t)) !env' ;
+      if is_select body' then
+        multi_ret_map := ConstrMap.add body' id !multi_ret_map )
     id_body_list ;
   (* For other leaked returns. *)
   let tuple_map =
@@ -189,9 +191,28 @@ let add_temp_var_for_multi_ret env =
     tuple_map ;
   !env'
 
+(* If two var has same body, we assign one to the other *)
+let dedup env =
+  let env' = ref env in
+  let _ =
+    Id.Map.fold
+      (fun _ v map ->
+        match v with
+        | LocalDef (id, body, t) ->
+            if ConstrMap.mem body map then (
+              env' :=
+                push_named
+                  (LocalDef (id, mkVar (ConstrMap.find body map), t))
+                  !env' ;
+              map )
+            else ConstrMap.add body id map
+        | _ -> map )
+      env.env_named_context ConstrMap.empty
+  in
+  !env'
+
 let generate_statement env params =
   let open! Json.Encode in
-  let env = add_temp_var_for_multi_ret env in
   let params_set =
     Id.Set.of_list (List.map (fun x -> Id.of_string x.name) params)
   in
@@ -267,6 +288,8 @@ let generate_statement env params =
     merged_statements
 
 let codegen_ast_json env =
+  let env = add_temp_var_for_multi_ret env in
+  let env = dedup env in
   let declare = generate_node_declare env in
   let statements = generate_statement env declare.params in
   let open! Json.Encode in
