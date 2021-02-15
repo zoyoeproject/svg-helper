@@ -129,21 +129,6 @@ let count_output_index_of_path (node_map: Context.node_map) node_name ret_name =
   ) (None, 0) node.outputs in
   option_get matched_index, Array.to_list (Array.map snd node.outputs)
 
-let rec mk_select_with_type_list type_list k e =
-  match type_list with
-  | [] -> assert false
-  | [ _ ] when k == 0 -> e
-  | [ t1; t2 ] when k == 0 ->
-    mkApp (fst_const, [| t1; t2; e |])
-  | [ t1; t2 ] when k == 1 ->
-    mkApp (snd_const, [| t1; t2; e |])
-  | t :: tl when k = 0 ->
-    mkApp (fst_const, [| t; mk_prod_type tl; e |])
-  | t :: tl when k < List.length type_list ->
-      let e = mk_select_with_type_list tl (k - 1) e in
-      mkApp (snd_const, [| t; mk_prod_type tl; e |])
-  | _ -> assert false
-
 let generate_env_from_node_map (node_map: Context.node_map) default_env =
   let env = default_env in
   let size = Context.NodeMap.cardinal node_map in

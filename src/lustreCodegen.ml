@@ -2,7 +2,7 @@ open MiniCic.Constr
 open MiniCic.Names
 open MiniCic.Env
 open MiniCic.Context.Named.Declaration
-open MiniCic.CoreType
+open MiniCic.Prod
 
 type declare_unit = {
   name: string;
@@ -87,12 +87,6 @@ let to_notation name =
   | "mod" -> "mod"
   | _ -> assert false
 
-let is_const_fst c =
-  (compare c fst_const) = 0
-
-let is_const_snd c =
-  (compare c snd_const) = 0
-
 let generate_expr c =
   let dependency = ref Id.Set.empty in
   let rec fetch_inner c idx =
@@ -132,8 +126,95 @@ let generate_expr c =
   let expr = aux inner in
   idx, expr, !dependency
 
+let rec map_select_inner f c =
+  match c with
+  | App (op, [|t1; t2; inner|]) when is_const_fst op || is_const_snd op ->
+    let inner' = map_select_inner f inner in
+    if inner' == inner then
+      c
+    else
+      App (op, [| t1; t2; inner' |])
+  | _ -> f c
+
+module ConstrMap = Map.Make (MiniCic.Constr)
+module IntSet = Set.Make (MiniCic.Int)
+
+(* Add more vars for uncatched multi-return. *)
+let add_temp_var_for_multi_ret env =
+  let env' = ref env in
+  let name_suffix = ref 0 in
+  let multi_ret_map = ref ConstrMap.empty in
+  let rec gen_name () =
+    let name = "r" ^ string_of_int !name_suffix in
+    name_suffix := !name_suffix + 1;
+    if (Id.Map.mem name !env'.env_named_context)
+    then
+      gen_name ()
+    else
+      name
+  in
+  (* Sort the vars. *)
+  let id_body_list = Id.Map.fold (fun _ v statements ->
+      match v with
+      | LocalDef (id, body, t) ->
+        let idx, _, _ = generate_expr body in
+        (id, idx, t, body) :: statements
+      | _ -> statements
+    ) env.env_named_context []
+  in
+  (* Check the uncatched multi-return for var body. *)
+  List.iter (fun (id, _, t, body) ->
+      let rec aux c =
+        if is_select c then
+          let c = map_select_inner (MiniCic.Constr.map aux) c in
+          if ConstrMap.mem c !multi_ret_map
+          then
+            mkVar (ConstrMap.find c !multi_ret_map)
+          else
+            let id = gen_name () in
+            multi_ret_map := ConstrMap.add c id !multi_ret_map;
+            let _, t, _ = parse_select c in
+            env' := push_named (LocalDef (id, t, c)) !env';
+            mkVar id
+        else
+          MiniCic.Constr.map aux c
+      in
+      let body' = map_select_inner aux body in
+      if body == body' then
+        ()
+      else
+        env' := push_named (LocalDef (id, t, body)) !env';
+  ) id_body_list;
+  (* For other leaked returns. *)
+  let tuple_map = Id.Map.fold (fun _ v m ->
+      match v with
+      | LocalDef (_, body, _) when is_select body ->
+        let idx, _, inner = parse_select body in
+        ConstrMap.update inner (fun idx_map_opt ->
+          match idx_map_opt with
+          | None -> Some (IntSet.singleton idx)
+          | Some idx_map -> Some (IntSet.add idx idx_map)
+        ) m
+      | _ -> m
+  ) !env'.env_named_context ConstrMap.empty
+  in
+  ConstrMap.iter (fun tuple_body idx_set ->
+    let tl = type_list_of_tuple_body !env' tuple_body in
+    let _ = List.fold_left (fun idx t ->
+      if IntSet.mem idx idx_set then
+        idx + 1
+      else
+        let body = mk_select_with_type_list tl idx tuple_body in
+        let id = gen_name () in
+        env' := push_named (LocalDef (id, t, body)) !env';
+        idx + 1
+    ) 0 tl in
+    ()) tuple_map;
+  !env'
+
 let generate_statement env params =
   let open! Json.Encode in
+  let env = add_temp_var_for_multi_ret env in
   let params_set = Id.Set.of_list (List.map (fun x -> Id.of_string x.name) params) in
   let statements = Id.Map.fold (fun _ v statements ->
     match v with

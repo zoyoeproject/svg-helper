@@ -17,7 +17,7 @@ type t = {
   export: bool;
 }
 
-let mk_path a b c = PATH (a,b,true)
+let mk_path a b c = PATH (a,b,c)
 let mk_var a = VAR (a,true)
 let mk_param info input = {para_info = info; input = input}
 
