@@ -32,7 +32,10 @@ let mk_var_promise context f =
     f (Constr.mkVar (Names.Id.to_string args.(0)))
   )
 
-let mk_constant_promise context c f =
+let mk_constant_promise c f =
+  f c
+
+let mk_ind_promise c f =
   f c
 
 let new_ssa ctxt =
