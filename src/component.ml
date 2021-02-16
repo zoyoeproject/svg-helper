@@ -36,7 +36,7 @@ let constant_to_node (c, typ, info) node_name =
   let outputs = collect_outputs info 0 [] output_typ in
   Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs)
 
-let ind_to_node env info_key idx =
+let ind_to_node env info_key idx node_name =
   let open MiniCic.Mind in
   (* Because case return type is depend on inputs, so we use `Int 0` for placeholder *)
   let ind = MiniCic.Env.lookup_mutind env info_key in
@@ -47,7 +47,7 @@ let ind_to_node env info_key idx =
     }) ind_cell.cell_cons in
   let ci = MiniCic.Env.get_case_info env (info_key, idx) in
   let cond = { para_info = ("cond", (mkInd ci.ci_ind)); input = None } in
-  Node.mk_node ind_cell.cell_typename (Case (ci, Int 0, Int 0, [||])) (Array.concat [[|cond|]; cases]) [| (Name.Anonymous, Int 0)|]
+  Node.mk_node node_name (Case (ci, Int 0, Int 0, [||])) (Array.concat [[|cond|]; cases]) [| (Name.Anonymous, Int 0)|]
 
 let constant_to_node_with_params (c, typ, info) node_name params =
   let args, output_typ = collect_params [] typ in
@@ -74,7 +74,7 @@ let constr_to_node env c node_name =
   | Ind (ind, _) -> begin
     let info_key, idx = ind in
     Js.log @@ Label.to_string info_key;
-    ind_to_node env info_key idx
+    ind_to_node env info_key idx node_name
     end
   | Var id -> var_to_node (id, Evar ("input_type", [||])) node_name
   | _ -> begin
@@ -140,7 +140,7 @@ let init_component_bar env context parent contant_map ind_map =
   ) contant_map;
   IndMap.iter (fun k (entry :inductive_block) ->
     Array.iteri (fun idx _ ->
-      let node = ind_to_node env k idx in
+      let node = ind_to_node env k idx "" in
       let node_ele = Utils.mk_group_in parent None "" in
       let prompt = Context.mk_ind_promise (mkInd (k, idx)) in
       draw_node_as_tool context node_ele node;

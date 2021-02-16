@@ -10,7 +10,7 @@ let print_var = function
   | Const (c, _) -> Constant.to_string c
   | Int i -> string_of_int i
   | App (Const (c, _), [||]) -> Constant.to_string c
-  | Case _ -> "case"
+  | Case (ci, _, _, _) -> "case-" ^ (MiniCic.Names.KerName.label (fst ci.ci_ind))
   | _ -> assert false
 
 let draw_edges (nodes:node_map) =

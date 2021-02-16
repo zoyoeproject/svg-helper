@@ -58,7 +58,7 @@ let generate_context_from_env prompt parent_div env =
         let node_name = Context.new_ssa ctxt in
         let ret_name = Name.Anonymous in
         let key, idx = ci.ci_ind in
-        let node = Component.ind_to_node env key idx in
+        let node = Component.ind_to_node env key idx node_name in
         node.inputs.(0) <- {(node.inputs.(0)) with input= aux input_map 0 cond} ;
         Array.iteri
           (fun i c ->
