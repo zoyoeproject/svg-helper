@@ -69,7 +69,7 @@ let to_notation name =
   | "mod" -> "mod"
   | _ -> assert false
 
-let generate_expr c =
+let generate_expr env c =
   let dependency = ref Id.Set.empty in
   let rec fetch_inner c idx =
     match c with
@@ -92,7 +92,17 @@ let generate_expr c =
     | Case (ci, _, cond, dispatches) when is_case_info_bool ci ->
         object_
           [ ("notation", string "if")
-          ; ("args", list aux [cond; dispatches.(0); dispatches.(1)]) ]
+          ; ("cond", aux cond)
+          ; ("args", list aux [dispatches.(0); dispatches.(1)]) ]
+    | Case (ci, _, cond, dispatches) ->
+        let k, idx = ci.ci_ind in
+        let ind = MiniCic.Env.lookup_mutind env k in
+        let cell = ind.cells.(idx) in
+        object_
+          [ ("notation", string "merge")
+          ; ("cond", aux cond)
+          ; ("constructors", array (fun x -> string (Name.get_id (fst x))) cell.cell_cons)
+          ; ("args", array aux dispatches) ]
     | Var id ->
         dependency := Id.Set.add id !dependency ;
         string (unit_to_string c)
@@ -130,7 +140,7 @@ let add_temp_var_for_multi_ret env =
       (fun _ v statements ->
         match v with
         | LocalDef (id, body, t) ->
-            let idx, _, _ = generate_expr body in
+            let idx, _, _ = generate_expr env body in
             (id, idx, t, body) :: statements
         | _ -> statements )
       env.env_named_context []
@@ -221,7 +231,7 @@ let generate_statement env params =
       (fun _ v statements ->
         match v with
         | LocalDef (id, body, _) ->
-            let idx, expr, dependency = generate_expr body in
+            let idx, expr, dependency = generate_expr env body in
             let dependency =
               Id.Set.filter (fun e -> not (Id.Set.mem e params_set)) dependency
             in
