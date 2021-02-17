@@ -145,3 +145,28 @@ let init_context prompt parent nodes =
     prompt = prompt;
   };
   get_global_context()
+
+(* Iterate the nodes as topo-sort *)
+let node_map_sorted_array node_map =
+  let open Node in
+  let open TopoSort in
+  let f_get_deps graph_node =
+    let node = DagreFFI.extract graph_node in
+    Array.fold_left (fun dep param ->
+        match param.input with
+        | Some (PATH (in_node_name, _, _)) -> NodeMap.add in_node_name true dep
+        | _ -> dep
+      ) NodeMap.empty node.inputs
+  in
+  let elements = NodeMap.bindings node_map |> List.map (fun (x, y) -> x, f_get_deps y) |> Array.of_list in
+  let f_dec_deps = NodeMap.remove in
+  let f_cardinal_deps = NodeMap.cardinal in
+  topo_sort f_dec_deps f_cardinal_deps elements
+
+let node_map_sorted_iter f node_map =
+  node_map_sorted_array node_map |>
+  Array.iter (fun name -> f name (NodeMap.find name node_map))
+
+let node_map_sorted_fold f init node_map =
+  node_map_sorted_array node_map |>
+  Array.fold_left (fun init name -> f init name (NodeMap.find name node_map)) init

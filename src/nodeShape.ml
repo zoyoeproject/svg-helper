@@ -41,32 +41,34 @@ let draw_edges (nodes:node_map) =
     svg ^ edges
   ) nodes ""
 
+let update_edges context =
+    let edges = Document.get_by_id Document.document "edges" in
+    Document.setInnerHTML edges (draw_edges context.nodes)
+
 let set_input_ancher context node_name input item =
   Utils.on_mousedoubleclick_set item (fun _ ->
     let _  = match input.input with
     | Some _ -> input.input <- None
     | _ -> ()
     in
-    let edges = Document.get_by_id Document.document "edges" in
-    Document.setInnerHTML edges (draw_edges context.nodes)
+    update_edges context
   );
   Utils.on_mouseclick_set item (fun _ ->
-    let _, in_type = input.para_info in
+    let _, _(*tin*) = input.para_info in
     let _  = match input.input with
     | None -> begin
       match Context.get_focus_connect context with
-        | Some (PATH (focused_node_name, na, _) , out_type (*typ*)) when focused_node_name != node_name ->
+        | Some (PATH (focused_node_name, na, _) , _(*tout*)) when focused_node_name != node_name ->
           Js.log focused_node_name;
           Js.log na;
-          input.input <- Some (PATH (focused_node_name, na, Constr.compare in_type out_type = 0))
-        | Some (VAR (n, _), out_type) ->
-          input.input <- Some (VAR (n, Constr.compare in_type out_type = 0))
+          input.input <- Some (PATH (focused_node_name, na, true))
+        | Some (VAR (n, _), _) ->
+          input.input <- Some (VAR (n, true))
         | _ -> ()
       end
     | _ -> ()
     in
-    let edges = Document.get_by_id Document.document "edges" in
-    Document.setInnerHTML edges (draw_edges context.nodes)
+    update_edges context
   )
 
 let set_output_ancher context item output =

@@ -116,10 +116,9 @@ let generate_context_from_env prompt parent_div env =
 let option_get o = match o with None -> assert false | Some v -> v
 
 (* Give a path of node_map, returns the index and type list *)
-let count_output_index_of_path (node_map : Context.node_map) node_name ret_name
-    =
+let count_output_index_of_path node_map node_name ret_name =
   let graph_node = Context.NodeMap.find node_name node_map in
-  let node = graph_node.extra in
+  let node = DagreFFI.extract graph_node in
   let matched_index, _ =
     Array.fold_left
       (fun (index_opt, index) (name, _) ->
@@ -130,7 +129,56 @@ let count_output_index_of_path (node_map : Context.node_map) node_name ret_name
   in
   (option_get matched_index, Array.to_list (Array.map snd node.outputs))
 
-let generate_env_from_node_map (node_map : Context.node_map) default_env =
+let get_src_type node_map param =
+  match param.input with
+  | None -> Int 0 (* for placeholder *)
+  | Some (VAR (c, _)) -> MiniCic.Retype.type_of MiniCic.Env.empty_env c
+  | Some (PATH (in_node_name, ret_name, _)) ->
+      let node =
+        Context.NodeMap.find in_node_name node_map |> DagreFFI.extract
+      in
+      let tuple_index, tuple_type_list =
+        count_output_index_of_path node_map in_node_name ret_name
+      in
+      List.nth tuple_type_list tuple_index
+
+let type_check_all_nodes node_map =
+  let global_type_safe = ref true in
+  Context.node_map_sorted_iter
+    (fun _ node ->
+      let node = DagreFFI.extract node in
+      (* For Case, we update the input/output type to the first case branch *)
+      match node.src with
+      | Case (_, _, _, _) ->
+          let default_typ = get_src_type node_map node.inputs.(1) in
+          Array.iteri
+            (fun i param ->
+              node.inputs.(i)
+              <- {param with para_info= (fst param.para_info, default_typ)} )
+            node.inputs
+      | _ ->
+          () ;
+          Array.iteri
+            (fun i param ->
+              let dst_type = snd param.para_info in
+              let src_typ = get_src_type node_map param in
+              let type_safe = MiniCic.Constr.compare src_typ dst_type = 0 in
+              if not type_safe then global_type_safe := false ;
+              let new_input =
+                match param.input with
+                | None ->
+                    global_type_safe := false ;
+                    None
+                | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
+                | Some (PATH (in_node_name, ret_name, _)) ->
+                    Some (PATH (in_node_name, ret_name, type_safe))
+              in
+              node.inputs.(i) <- {param with input= new_input} )
+            node.inputs )
+    node_map ;
+  !global_type_safe
+
+let _generate_env_from_node_map node_map default_env =
   let env = default_env in
   let size = Context.NodeMap.cardinal node_map in
   let cache = Hashtbl.create size in
@@ -206,6 +254,15 @@ let generate_env_from_node_map (node_map : Context.node_map) default_env =
       let _, env = aux node env in
       env )
     node_map env
+
+let generate_env_from_node_map node_map default_env =
+  if type_check_all_nodes node_map then
+    _generate_env_from_node_map node_map default_env
+  else (
+    NodeShape.update_edges (Context.get_global_context ());
+    Js.log "type check failed";
+    assert false
+  )
 
 let build_cfg prompt tool_div parent_div env =
   Js.log env ;

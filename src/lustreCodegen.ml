@@ -101,7 +101,8 @@ let generate_expr env c =
         object_
           [ ("notation", string "merge")
           ; ("cond", aux cond)
-          ; ("constructors", array (fun x -> string (Name.get_id (fst x))) cell.cell_cons)
+          ; ( "constructors"
+            , array (fun x -> string (Name.get_id (fst x))) cell.cell_cons )
           ; ("args", array aux dispatches) ]
     | Var id ->
         dependency := Id.Set.add id !dependency ;
@@ -223,6 +224,7 @@ let dedup env =
 
 let generate_statement env params =
   let open! Json.Encode in
+  let open TopoSort in
   let params_set =
     Id.Set.of_list (List.map (fun x -> Id.of_string x.name) params)
   in
@@ -231,47 +233,20 @@ let generate_statement env params =
       (fun _ v statements ->
         match v with
         | LocalDef (id, body, _) ->
-            let idx, expr, dependency = generate_expr env body in
-            let dependency =
-              Id.Set.filter (fun e -> not (Id.Set.mem e params_set)) dependency
+            let idx, expr, deps = generate_expr env body in
+            let deps =
+              Id.Set.filter (fun e -> not (Id.Set.mem e params_set)) deps
             in
-            (id, idx, Json.stringify expr, dependency, 1) :: statements
+            ((id, idx, Json.stringify expr), deps) :: statements
         | _ -> statements )
       env.env_named_context []
+    |> Array.of_list
+    |> topo_sort (fun (id, _, _) deps -> Id.Set.remove id deps) Id.Set.cardinal
   in
-  let statements = ref (Array.of_list statements) in
-  let rec topo_sort idx =
-    if Array.length !statements <> idx then (
-      (* pending used to skip selected elements *)
-      Array.stable_sort
-        (fun (_, i1, _, d1, pending1) (_, i2, _, d2, pending2) ->
-          let diff = pending1 - pending2 in
-          if diff <> 0 then diff
-          else
-            let diff = Id.Set.cardinal d1 - Id.Set.cardinal d2 in
-            if diff = 0 then i1 - i2 else diff )
-        !statements ;
-      let cur_id, _, _, d, _ = !statements.(idx) in
-      if Id.Set.cardinal d <> 0 then (
-        Js.log "circel detected" ;
-        Js.log idx ;
-        Js.log !statements ;
-        assert false )
-      else (
-        statements :=
-          Array.map
-            (fun (id, i, e, d, pend) ->
-              let pend = if pend = 0 || Id.equal id cur_id then 0 else 1 in
-              (id, i, e, Id.Set.remove cur_id d, pend) )
-            !statements ;
-        topo_sort (idx + 1) ) )
-    else ()
-  in
-  topo_sort 0 ;
   (* merge multiple-return statements *)
-  let merged_statements =
+  let statements =
     Array.fold_left
-      (fun stats (id, idx, expr, _, _) ->
+      (fun stats (id, idx, expr) ->
         if idx = 0 then ([id], expr) :: stats
         else
           List.map
@@ -279,12 +254,10 @@ let generate_statement env params =
               if String.compare expr expr' = 0 then (id :: ids, expr)
               else (ids, expr') )
             stats )
-      [] !statements
+      [] statements
+    |> List.map (fun (ids, expr) -> (List.rev ids, expr))
   in
-  let merged_statements =
-    List.map (fun (ids, expr) -> (List.rev ids, expr)) merged_statements
-  in
-  let merged_statements = List.rev merged_statements in
+  let statements = List.rev statements in
   (* merge done *)
   list
     (fun (ids, expr) ->
@@ -295,7 +268,7 @@ let generate_statement env params =
             ; ("left", list (fun id -> string (Id.to_string id)) ids)
             ; ("right", expr) ]
       | _ -> assert false )
-    merged_statements
+    statements
 
 let codegen_ast_json env =
   let env = add_temp_var_for_multi_ret env in
