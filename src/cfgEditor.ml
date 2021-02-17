@@ -134,9 +134,6 @@ let get_src_type node_map param =
   | None -> Int 0 (* for placeholder *)
   | Some (VAR (c, _)) -> MiniCic.Retype.type_of MiniCic.Env.empty_env c
   | Some (PATH (in_node_name, ret_name, _)) ->
-      let node =
-        Context.NodeMap.find in_node_name node_map |> DagreFFI.extract
-      in
       let tuple_index, tuple_type_list =
         count_output_index_of_path node_map in_node_name ret_name
       in

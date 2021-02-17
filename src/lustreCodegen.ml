@@ -247,15 +247,20 @@ let generate_statement env params =
   let statements =
     Array.fold_left
       (fun stats (id, idx, expr) ->
-        if idx = 0 then ([id], expr) :: stats
+        if List.find_opt (fun (_, expr') -> String.equal expr expr') stats = None
+        then ([(id, idx)], expr) :: stats
         else
           List.map
             (fun (ids, expr') ->
-              if String.compare expr expr' = 0 then (id :: ids, expr)
+              if String.compare expr expr' = 0 then ((id, idx) :: ids, expr)
               else (ids, expr') )
             stats )
       [] statements
-    |> List.map (fun (ids, expr) -> (List.rev ids, expr))
+    |> List.map (fun (ids, expr) ->
+      let ids = Array.of_list ids in
+      Array.fast_sort (fun (_, idx1) (_, idx2) -> idx1 - idx2) ids;
+      Array.map fst ids, expr
+    )
   in
   let statements = List.rev statements in
   (* merge done *)
@@ -265,7 +270,7 @@ let generate_statement env params =
       | Some expr ->
           object_
             [ ("op", string "assign")
-            ; ("left", list (fun id -> string (Id.to_string id)) ids)
+            ; ("left", array (fun id -> string (Id.to_string id)) ids)
             ; ("right", expr) ]
       | _ -> assert false )
     statements
