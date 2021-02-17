@@ -290,5 +290,5 @@ let codegen_ast_json env =
 
 let codegen_from_ctx env =
   let ctxt = Context.get_global_context () in
-  let env = CfgEditor.generate_env_from_node_map ctxt.nodes env in
+  let env = CfgEditor.generate_env_from_node_map ctxt env in
   codegen_ast_json env

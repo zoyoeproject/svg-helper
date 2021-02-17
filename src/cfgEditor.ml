@@ -139,46 +139,49 @@ let get_src_type node_map param =
       in
       List.nth tuple_type_list tuple_index
 
-let type_check_all_nodes node_map =
+let type_check_all_nodes ctxt =
+  let open Context in
+  let node_map = ctxt.nodes in
   let global_type_safe = ref true in
   Context.node_map_sorted_iter
     (fun _ node ->
       let node = DagreFFI.extract node in
       (* For Case, we update the input/output type to the first case branch *)
-      match node.src with
-      | Case (_, _, _, _) ->
-          let default_typ = get_src_type node_map node.inputs.(1) in
-          Array.iteri
-            (fun i param ->
-              if i > 0 then
-                node.inputs.(i)
-                <- {param with para_info= (fst param.para_info, default_typ)}
-              )
-            node.inputs ;
-          Array.iteri
-            (fun i (name, _) -> node.outputs.(i) <- (name, default_typ))
-            node.outputs
-      | _ ->
-          () ;
-          Array.iteri
-            (fun i param ->
-              let dst_type = snd param.para_info in
-              let src_typ = get_src_type node_map param in
-              let type_safe = MiniCic.Constr.compare src_typ dst_type = 0 in
-              if not type_safe then global_type_safe := false ;
-              let new_input =
-                match param.input with
-                | None ->
-                    global_type_safe := false ;
-                    None
-                | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
-                | Some (PATH (in_node_name, ret_name, _)) ->
-                    Some (PATH (in_node_name, ret_name, type_safe))
-              in
-              node.inputs.(i) <- {param with input= new_input} )
-            node.inputs )
+      let () =
+        match node.src with
+        | Case (_, _, _, _) ->
+            let default_typ = get_src_type node_map node.inputs.(1) in
+            Js.log default_typ ;
+            Array.iteri
+              (fun i param ->
+                if i > 0 then
+                  (node.inputs.(i)).para_info
+                  <- (fst param.para_info, default_typ) )
+              node.inputs ;
+            Array.iteri
+              (fun i (name, _) -> node.outputs.(i) <- (name, default_typ))
+              node.outputs
+        | _ -> ()
+      in
+      Array.iteri
+        (fun i param ->
+          let dst_type = snd param.para_info in
+          let src_typ = get_src_type node_map param in
+          let type_safe = MiniCic.Constr.compare src_typ dst_type = 0 in
+          if not type_safe then global_type_safe := false ;
+          let new_input =
+            match param.input with
+            | None ->
+                global_type_safe := false ;
+                None
+            | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
+            | Some (PATH (in_node_name, ret_name, _)) ->
+                Some (PATH (in_node_name, ret_name, type_safe))
+          in
+          (node.inputs.(i)).input <- new_input )
+        node.inputs )
     node_map ;
-  NodeShape.update_edges (Context.get_global_context ()) ;
+  NodeShape.update_edges ctxt ;
   !global_type_safe
 
 let _generate_env_from_node_map node_map default_env =
@@ -258,9 +261,9 @@ let _generate_env_from_node_map node_map default_env =
       env )
     node_map env
 
-let generate_env_from_node_map node_map default_env =
-  if type_check_all_nodes node_map then
-    _generate_env_from_node_map node_map default_env
+let generate_env_from_node_map ctxt default_env =
+  if type_check_all_nodes ctxt then
+    _generate_env_from_node_map ctxt.nodes default_env
   else (
     Js.log "type check failed" ;
     assert false )

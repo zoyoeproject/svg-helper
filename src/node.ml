@@ -5,7 +5,7 @@ type var =
   | PATH of string * Names.Name.t * bool (* node name, ret name, type_checked *)
 
 type param = {
-  para_info: (string * Constr.t); (* Name, Type *)
+  mutable para_info: (string * Constr.t); (* Name, Type *)
   mutable input: var option;
 }
 
