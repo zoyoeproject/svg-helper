@@ -150,9 +150,14 @@ let type_check_all_nodes node_map =
           let default_typ = get_src_type node_map node.inputs.(1) in
           Array.iteri
             (fun i param ->
-              node.inputs.(i)
-              <- {param with para_info= (fst param.para_info, default_typ)} )
-            node.inputs
+              if i > 0 then
+                node.inputs.(i)
+                <- {param with para_info= (fst param.para_info, default_typ)}
+              )
+            node.inputs ;
+          Array.iteri
+            (fun i (name, _) -> node.outputs.(i) <- (name, default_typ))
+            node.outputs
       | _ ->
           () ;
           Array.iteri
@@ -173,6 +178,7 @@ let type_check_all_nodes node_map =
               node.inputs.(i) <- {param with input= new_input} )
             node.inputs )
     node_map ;
+  NodeShape.update_edges (Context.get_global_context ()) ;
   !global_type_safe
 
 let _generate_env_from_node_map node_map default_env =
@@ -256,10 +262,8 @@ let generate_env_from_node_map node_map default_env =
   if type_check_all_nodes node_map then
     _generate_env_from_node_map node_map default_env
   else (
-    NodeShape.update_edges (Context.get_global_context ());
-    Js.log "type check failed";
-    assert false
-  )
+    Js.log "type check failed" ;
+    assert false )
 
 let build_cfg prompt tool_div parent_div env =
   Js.log env ;
