@@ -11,10 +11,10 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
-let generate_context_from_env prompt parent_div env =
+let generate_context_from_env prompt parse parent_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
-  let ctxt = Context.init_context prompt parent_div Context.NodeMap.empty in
+  let ctxt = Context.init_context prompt env parse parent_div Context.NodeMap.empty in
   (*
    * TODO we need to make sure c is a closed term
    * If c is not closed than we need to fill make it closed using
@@ -268,9 +268,9 @@ let generate_env_from_node_map ctxt default_env =
     Js.log "type check failed" ;
     assert false )
 
-let build_cfg prompt tool_div parent_div env =
+let build_cfg prompt parse tool_div parent_div env =
   Js.log env ;
-  let ctxt = generate_context_from_env prompt parent_div env in
+  let ctxt = generate_context_from_env prompt parse parent_div env in
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes ;
   Flowgraph.init_flowgraph env ctxt parent_div ;

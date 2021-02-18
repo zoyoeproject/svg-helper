@@ -64,7 +64,7 @@ let var_to_node (id, typ) node_name category =
   }) in
   Node.mk_node node_name (mkVar id) [|arg|] [|Name.Name id, typ|] category
 
-let constr_to_node env c node_name category =
+let constr_to_node env c node_name category typ =
   match c with
   | Const (c, _) -> begin
       Js.log @@ Label.to_string c;
@@ -76,7 +76,7 @@ let constr_to_node env c node_name category =
     Js.log @@ Label.to_string info_key;
     ind_to_node env info_key idx node_name category
     end
-  | Var id -> var_to_node (id, Evar ("input_type", [||])) node_name category
+  | Var id -> var_to_node (id, typ) node_name category
   | _ -> begin
       Js.log "false";
       assert false
@@ -101,7 +101,8 @@ let draw_node_as_tool context parent node =
     NodeShape.draw_normal context parent node center sz true
 
 let add_to_component_bar env context parent shift c =
-  let node = constr_to_node env c "" CategoryToolBox in
+  (* MiniCic.Constr.Int 0 is a place holder, it is useless *)
+  let node = constr_to_node env c "" CategoryToolBox (Int 0) in
   let node_ele = Utils.mk_group_in parent None "" in
   draw_node_as_tool context node_ele node;
   Document.setAttribute node_ele "class" "default";

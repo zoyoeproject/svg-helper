@@ -16,14 +16,18 @@ let get_demo_env () =
   let r = Id.of_string "r" in
   let n' = Id.of_string "n" in
   let env = env
-    |> MiniCic.Env.push_named (LocalAssum (x, int_type))
-    |> MiniCic.Env.push_named (LocalAssum (y, int_type))
-    |> MiniCic.Env.push_named (LocalAssum (z, int_type))
-    |> MiniCic.Env.push_named (LocalDef (r, app, int_type))
-    |> MiniCic.Env.push_named (LocalDef (n', n, int_type))
-    |> MiniCic.Env.push_named (LocalAssum (cond, bool_type))
+    |> MiniCic.Env.push_named (LocalAssum (x, int_type)) ~static:false
+    |> MiniCic.Env.push_named (LocalAssum (y, int_type)) ~static:false
+    |> MiniCic.Env.push_named (LocalAssum (z, int_type)) ~static:false
+    |> MiniCic.Env.push_named (LocalDef (r, app, int_type)) ~static:false
+    |> MiniCic.Env.push_named (LocalDef (n', n, int_type)) ~static:false
+    |> MiniCic.Env.push_named (LocalAssum (cond, bool_type)) ~static:false
     |> MiniCic.Env.export n'
   in env
 
-let display_env_as_cfg prompt tool_div parent env =
-  ignore @@ CfgEditor.build_cfg prompt tool_div parent env
+let default_parse _ _ =
+  let open MiniCic.CoreType in
+  int_type
+
+let display_env_as_cfg prompt parse tool_div parent env =
+  ignore @@ CfgEditor.build_cfg prompt parse tool_div parent env

@@ -37,7 +37,7 @@ window.codegen = function() {
 
 if (parent) {
   var env = demo.get_demo_env();
-  demo.display_env_as_cfg(prompt, tools, parent, env);
+  demo.display_env_as_cfg(prompt, demo.default_parse, tools, parent, env);
 }
 
 module.exports = {
