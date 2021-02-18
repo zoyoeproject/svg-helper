@@ -11,14 +11,16 @@ let encode_declare_unit unit =
   object_ [("name", string unit.name); ("type", string unit.typ)]
 
 type node_declare =
-  { params: declare_unit list
+  { statics: declare_unit list
+  ; params: declare_unit list
   ; returns: declare_unit list
   ; vars: declare_unit list }
 
 let encode_node_declare dec =
   let open! Json.Encode in
   object_
-    [ ("params", list encode_declare_unit dec.params)
+    [ ("statics", list encode_declare_unit dec.statics)
+    ; ("params", list encode_declare_unit dec.params)
     ; ("returns", list encode_declare_unit dec.returns)
     ; ("vars", list encode_declare_unit dec.vars) ]
 
@@ -33,23 +35,26 @@ let unit_to_string c =
       assert false
 
 let generate_node_declare env =
-  let params, vars, returns =
+  let statics, params, vars, returns =
     Id.Map.fold
-      (fun _ v (params, vars, returns) ->
+      (fun _ v (statics, params, vars, returns) ->
         match v with
         | LocalAssum (id, t) ->
             Js.log id ;
             let dec = {name= Id.to_string id; typ= unit_to_string t} in
-            (dec :: params, vars, returns)
+            if Id.Set.mem id env.env_static then
+              (dec :: statics, params, vars, returns)
+            else
+              (statics, dec :: params, vars, returns)
         | LocalDef (id, _, t) ->
             Js.log id ;
             let dec = {name= Id.to_string id; typ= unit_to_string t} in
             if MiniCic.Env.is_exported id env then
-              (params, vars, dec :: returns)
-            else (params, dec :: vars, returns) )
-      env.env_named_context ([], [], [])
+              (statics, params, vars, dec :: returns)
+            else (statics, params, dec :: vars, returns) )
+      env.env_named_context ([], [], [], [])
   in
-  {params; returns; vars}
+  {statics; params; returns; vars}
 
 let is_case_info_bool ci =
   let n, _ = ci.ci_ind in

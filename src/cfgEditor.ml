@@ -239,7 +239,7 @@ let _generate_env_from_node_map node_map default_env =
                 LocalDef (id, body, typ)
             in
             let env = if n.category = Node.CategoryReturn then MiniCic.Env.export id env else env in
-            (n.src, MiniCic.Env.push_named d env)
+            (n.src, MiniCic.Env.push_named d ~static:(n.category = Node.CategoryStaticParameter) env)
         | App (c, [||]) -> (App (c, args), env)
         | Int _ -> (n.src, env)
         | Case (ci, _, _, [||]) ->
