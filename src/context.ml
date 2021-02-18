@@ -5,7 +5,7 @@ module Constr = MiniCic.Constr
 type node_map = (Node.t DagreFFI.node_size) NodeMap.t
 type node = Node.t DagreFFI.node_size
 
-type constr_promise = (Constr.t -> unit) -> unit
+type constr_promise = (Constr.t -> Node.node_category -> unit) -> unit
 
 type constr_encoder = string array -> Constr.t
 
@@ -28,15 +28,26 @@ type context_info = {
 }
 
 let mk_var_promise context f =
-  context.prompt [| {label="var name"; info="text"} |] (fun args ->
-    f (Constr.mkVar (Names.Id.to_string args.(0)))
-  )
+  context.prompt [|
+    {label="var name"; info="text"};
+    {label="category"; info="static|parameter|var|return"};
+    {label="type"; info="text"} |]
+    (fun args ->
+      let category = match args.(1) with
+      | "static" -> Node.CategoryStaticParameter
+      | "parameter" -> Node.CategoryParameter
+      | "var" -> Node.CategoryVar
+      | "return" -> Node.CategoryReturn
+      | _ -> assert false
+      in
+      f (Constr.mkVar (Names.Id.to_string args.(0))) category
+    )
 
 let mk_constant_promise c f =
-  f c
+  f c Node.CategoryFunction
 
 let mk_ind_promise c f =
-  f c
+  f c Node.CategoryCase
 
 let new_ssa ctxt =
   ctxt.ssa_count <- ctxt.ssa_count + 1;

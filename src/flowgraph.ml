@@ -53,10 +53,10 @@ let init_flowgraph env context svgele =
   Utils.on_mouseclick_set svgele (fun e ->
     match Context.get_focus_create context with
     | Some (promise, _ (*FIXME t*) ) -> begin
-        promise (fun c ->
+        promise (fun c category ->
           Context.clear_focus context;
           Utils.restore_cfg_cursor context.cfg_ele;
-          let node = Component.constr_to_node env c (Context.new_ssa context) in
+          let node = Component.constr_to_node env c (Context.new_ssa context) category in
           add_node context node Document.(e.offsetX, e.offsetY)
         )
       end

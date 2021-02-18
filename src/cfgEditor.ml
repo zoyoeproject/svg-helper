@@ -36,7 +36,7 @@ let generate_context_from_env prompt parent_div env =
               let node =
                 Component.constant_to_node_with_params
                   (c, entry.entry_type, entry.info)
-                  node_name inputs
+                  node_name inputs Node.CategoryFunction
               in
               ctxt.nodes
               <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes ;
@@ -58,7 +58,7 @@ let generate_context_from_env prompt parent_div env =
         let node_name = Context.new_ssa ctxt in
         let ret_name = Name.Anonymous in
         let key, idx = ci.ci_ind in
-        let node = Component.ind_to_node env key idx node_name in
+        let node = Component.ind_to_node env key idx node_name Node.CategoryCase in
         node.inputs.(0) <- {(node.inputs.(0)) with input= aux input_map 0 cond} ;
         Array.iteri
           (fun i c ->
@@ -83,7 +83,7 @@ let generate_context_from_env prompt parent_div env =
         | LocalAssum (id, t) ->
             let name = Id.to_string id in
             let ret_name = Name.mk_name id in
-            let input = Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] in
+            let input = Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] Node.CategoryParameter in
             ctxt.nodes
             <- Context.NodeMap.add name (mk_graph_node input) ctxt.nodes ;
             Id.Map.add id (Some (mk_path name ret_name true)) inputs
@@ -100,11 +100,11 @@ let generate_context_from_env prompt parent_div env =
           let input = [|mk_param ("i", typ) from|] in
           let local_node =
             if MiniCic.Env.is_exported id env then
-              Node.mk_node_export (Id.to_string id) (mkVar id) input
-                [|(Name.Name id, typ)|]
+              Node.mk_node (Id.to_string id) (mkVar id) input
+                [|(Name.Name id, typ)|] Node.CategoryReturn
             else
               Node.mk_node (Id.to_string id) (mkVar id) input
-                [|(Name.Name id, typ)|]
+                [|(Name.Name id, typ)|] Node.CategoryVar
           in
           ctxt.nodes
           <- Context.NodeMap.add (Id.to_string id) (mk_graph_node local_node)
@@ -238,7 +238,7 @@ let _generate_env_from_node_map node_map default_env =
                 let body = args.(0) in
                 LocalDef (id, body, typ)
             in
-            let env = if n.export then MiniCic.Env.export id env else env in
+            let env = if n.category = Node.CategoryReturn then MiniCic.Env.export id env else env in
             (n.src, MiniCic.Env.push_named d env)
         | App (c, [||]) -> (App (c, args), env)
         | Int _ -> (n.src, env)

@@ -31,12 +31,12 @@ let rec collect_params acc c =
     c
   | _ -> acc, c
 
-let constant_to_node (c, typ, info) node_name =
+let constant_to_node (c, typ, info) node_name category =
   let args, output_typ = collect_params [] typ in
   let outputs = collect_outputs info 0 [] output_typ in
-  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs)
+  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs) category
 
-let ind_to_node env info_key idx node_name =
+let ind_to_node env info_key idx node_name category =
   let open MiniCic.Mind in
   (* Because case return type is depend on inputs, so we use `Int 0` for placeholder *)
   let ind = MiniCic.Env.lookup_mutind env info_key in
@@ -47,43 +47,43 @@ let ind_to_node env info_key idx node_name =
     }) ind_cell.cell_cons in
   let ci = MiniCic.Env.get_case_info env (info_key, idx) in
   let cond = { para_info = ("cond", (mkInd ci.ci_ind)); input = None } in
-  Node.mk_node node_name (Case (ci, Int 0, Int 0, [||])) (Array.concat [[|cond|]; cases]) [| (Name.Anonymous, Int 0)|]
+  Node.mk_node node_name (Case (ci, Int 0, Int 0, [||])) (Array.concat [[|cond|]; cases]) [| (Name.Anonymous, Int 0)|] category
 
-let constant_to_node_with_params (c, typ, info) node_name params =
+let constant_to_node_with_params (c, typ, info) node_name params category =
   let args, output_typ = collect_params [] typ in
   let args = List.mapi (fun i arg ->
     Node.({arg with input = params.(i)})
   ) args in
   let outputs = collect_outputs info 0 [] output_typ in
-  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs)
+  Node.mk_node node_name (App (mkConst c, [||])) (Array.of_list args) (Array.of_list outputs) category
 
-let var_to_node (id, typ) node_name =
+let var_to_node (id, typ) node_name category =
   let arg = Node.({
     para_info = "i", Evar ("input_type", [||]);
     input = None
   }) in
-  Node.mk_node node_name (mkVar id) [|arg|] [|Name.Name id, typ|]
+  Node.mk_node node_name (mkVar id) [|arg|] [|Name.Name id, typ|] category
 
-let constr_to_node env c node_name =
+let constr_to_node env c node_name category =
   match c with
   | Const (c, _) -> begin
       Js.log @@ Label.to_string c;
       let entry = MiniCic.Env.lookup_constant env c in
-      constant_to_node (c, entry.entry_type, entry.info) node_name
+      constant_to_node (c, entry.entry_type, entry.info) node_name category
     end
   | Ind (ind, _) -> begin
     let info_key, idx = ind in
     Js.log @@ Label.to_string info_key;
-    ind_to_node env info_key idx node_name
+    ind_to_node env info_key idx node_name category
     end
-  | Var id -> var_to_node (id, Evar ("input_type", [||])) node_name
+  | Var id -> var_to_node (id, Evar ("input_type", [||])) node_name category
   | _ -> begin
       Js.log "false";
       assert false
     end
 
 let input_node c =
-  Node.mk_node "input__unique" c [||] [|Name.Anonymous, int_type|]
+  Node.mk_node "input__unique" c [||] [|Name.Anonymous, int_type|] Node.CategoryToolBox
 
 type component_bar = {
   container: Document.element;
@@ -101,7 +101,7 @@ let draw_node_as_tool context parent node =
     NodeShape.draw_normal context parent node center sz true
 
 let add_to_component_bar env context parent shift c =
-  let node = constr_to_node env c "" in
+  let node = constr_to_node env c "" CategoryToolBox in
   let node_ele = Utils.mk_group_in parent None "" in
   draw_node_as_tool context node_ele node;
   Document.setAttribute node_ele "class" "default";
@@ -123,7 +123,7 @@ let init_component_bar env context parent contant_map ind_map =
   let open MiniCic.Mind in
   let shift = ref 0 in
   ConstantMap.iter (fun k entry ->
-    let node = constant_to_node (k, entry.entry_type, entry.info) "" in
+    let node = constant_to_node (k, entry.entry_type, entry.info) "" Node.CategoryToolBox in
     let node_ele = Utils.mk_group_in parent None "" in
     let prompt = Context.mk_constant_promise (mkConst k) in
     draw_node_as_tool context node_ele node;
@@ -140,7 +140,7 @@ let init_component_bar env context parent contant_map ind_map =
   ) contant_map;
   IndMap.iter (fun k (entry :inductive_block) ->
     Array.iteri (fun idx _ ->
-      let node = ind_to_node env k idx "" in
+      let node = ind_to_node env k idx "" Node.CategoryToolBox in
       let node_ele = Utils.mk_group_in parent None "" in
       let prompt = Context.mk_ind_promise (mkInd (k, idx)) in
       draw_node_as_tool context node_ele node;

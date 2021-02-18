@@ -125,7 +125,7 @@ let draw_output context parent node (cx, cy) (w, h) =
   ignore @@ Utils.mk_group_in parent None txt
 
 let draw_var context parent node (cx, cy) (w,_) as_tool =
-  let style = if node.export then "default-out" else "default" in
+  let style = if node.category = CategoryReturn then "default-out" else "default" in
   let circle = Circle.mk_circle_in parent style (w/2) (cx, cy) in
   let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin
