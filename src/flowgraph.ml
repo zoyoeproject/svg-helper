@@ -33,8 +33,8 @@ let draw_nodes svgele parent context =
 let reset context =
   let parent = Document.get_by_id Document.document "all" in
   Document.setInnerHTML parent "";
-  draw_nodes context.cfg_ele parent context;
-  ignore @@ Utils.mk_group_in parent (Some "edges") (NodeShape.draw_edges context.nodes)
+  ignore @@ Utils.mk_group_in parent (Some "edges") (NodeShape.draw_edges context.nodes);
+  draw_nodes context.cfg_ele parent context
 
 let add_node context node (x,y) =
   let parent = Document.get_by_id Document.document "all" in
@@ -48,8 +48,8 @@ let add_node context node (x,y) =
 let init_flowgraph env context svgele =
   let all = Utils.mk_group_in svgele (Some "all") "" in
   Utils.init_dragdrop context svgele all;
-  draw_nodes svgele all context;
   ignore @@ Utils.mk_group_in all (Some "edges") (NodeShape.draw_edges context.nodes);
+  draw_nodes svgele all context;
   Utils.on_mouseclick_set svgele (fun e ->
     match Context.get_focus_create context with
     | Some (promise, _ (*FIXME t*) ) -> begin

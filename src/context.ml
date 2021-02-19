@@ -13,6 +13,7 @@ type constr_encoder = string array -> Constr.t
 type prompt_info = {
   label: string;
   info: string;
+  default: string;
 }
 
 type focus =
@@ -33,9 +34,9 @@ type context_info = {
 let mk_var_promise context f =
   let open MiniCic.Env in
   context.prompt [|
-    {label="var name"; info="text"};
-    {label="category"; info="static parameter|parameter|var|return"};
-    {label="type"; info="text"} |]
+    {label="var name"; info="text"; default=""};
+    {label="category"; info="static parameter|parameter|var|return"; default="var"};
+    {label="type"; info="text"; default=""} |]
     (fun args ->
       let category = match args.(1) with
       | "static parameter" -> Node.CategoryStaticParameter
@@ -47,6 +48,7 @@ let mk_var_promise context f =
       let typ = context.parse args.(2) context.env in
       if category = Node.CategoryStaticParameter then
         context.env <- push_named (LocalAssum (args.(0), typ)) ~static:true context.env;
+        Js.log context.env;
       f (Constr.mkVar (Names.Id.to_string args.(0))) category typ
     )
 

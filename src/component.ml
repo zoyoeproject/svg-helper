@@ -68,7 +68,8 @@ let constant_to_node_with_params (c, typ, info) node_name params category =
 let var_to_node (id, typ) node_name category =
   let inputs =
     match category with
-    | CategoryVar -> [|Node.{para_info= ("i", typ); input= None}|]
+    | CategoryVar
+    | CategoryReturn -> [|Node.{para_info= ("i", typ); input= None}|]
     | _ -> [||]
   in
   Node.mk_node node_name (mkVar id) inputs [|(Name.Name id, typ)|] category
@@ -99,7 +100,7 @@ type component_bar =
 let font_size = 10
 
 let draw_node_as_tool context parent node =
-  let center = (20, 30) in
+  let center = (25, 40) in
   let sz = compute_size node in
   if isVar node.src then NodeShape.draw_var context parent node center sz true
   else NodeShape.draw_normal context parent node center sz true
@@ -141,7 +142,7 @@ let init_component_bar env context parent contant_map ind_map =
           then
             Utils.set_cfg_cursor context.cfg_ele (Document.outerHTML node_ele)
           else Utils.restore_cfg_cursor context.cfg_ele ) ;
-      shift := !shift + 40 )
+      shift := !shift + 50 )
     contant_map ;
   IndMap.iter
     (fun k (entry : inductive_block) ->
@@ -162,7 +163,7 @@ let init_component_bar env context parent contant_map ind_map =
                 Utils.set_cfg_cursor context.cfg_ele
                   (Document.outerHTML node_ele)
               else Utils.restore_cfg_cursor context.cfg_ele ) ;
-          shift := !shift + 40 )
+          shift := !shift + 50 )
         entry.cells )
     ind_map ;
   add_to_component_bar env context parent shift (mkVar (Id.to_string "var"))

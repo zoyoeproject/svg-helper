@@ -79,7 +79,7 @@ let set_output_ancher context item output =
 let draw_normal context parent node (cx, cy) (w,h) as_tool =
   let x1, y1 = cx - w/2, cy - h/2 in
   let x2, _ = cx + w/2, cy + h/2 in
-  let text = Utils.mk_text "default" (x1, y1 - 2) (print_var node.src) in
+  let text = Utils.mk_text "default" (x1, y1 - 4) (print_var node.src) in
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
@@ -94,7 +94,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
     let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
     let text = match output with
       | Name.Anonymous -> ""
-      | Name.Name id -> Utils.mk_text "default" (ax + 5, ay + 2) (Id.to_string id)
+      | Name.Name id -> Utils.mk_text "default" (ax - 10, ay + 2) (Id.to_string id)
     in
     if (not as_tool) then
       set_output_ancher context circle (Node.mk_path node.name output false, typ);
@@ -125,7 +125,13 @@ let draw_output context parent node (cx, cy) (w, h) =
   ignore @@ Utils.mk_group_in parent None txt
 
 let draw_var context parent node (cx, cy) (w,_) as_tool =
-  let style = if node.category = CategoryReturn then "default-out" else "default" in
+  let style =
+    match node.category with
+    | CategoryParameter -> "default-in"
+    | CategoryReturn -> "default-out"
+    | CategoryStaticParameter -> "default-static"
+    | _ -> "default"
+  in
   let circle = Circle.mk_circle_in parent style (w/2) (cx, cy) in
   let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin

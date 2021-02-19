@@ -44,8 +44,7 @@ let generate_node_declare env =
             let dec = {name= Id.to_string id; typ= unit_to_string t} in
             if Id.Set.mem id env.env_static then
               (dec :: statics, params, vars, returns)
-            else
-              (statics, dec :: params, vars, returns)
+            else (statics, dec :: params, vars, returns)
         | LocalDef (id, _, t) ->
             Js.log id ;
             let dec = {name= Id.to_string id; typ= unit_to_string t} in
@@ -227,11 +226,12 @@ let dedup env =
   in
   !env'
 
-let generate_statement env params =
+let generate_statement env statics params =
   let open! Json.Encode in
   let open TopoSort in
   let params_set =
-    Id.Set.of_list (List.map (fun x -> Id.of_string x.name) params)
+    Id.Set.of_list
+      (List.map (fun x -> Id.of_string x.name) (List.concat [params; statics]))
   in
   let statements =
     Id.Map.fold
@@ -252,7 +252,9 @@ let generate_statement env params =
   let statements =
     Array.fold_left
       (fun stats (id, idx, expr) ->
-        if List.find_opt (fun (_, expr') -> String.equal expr expr') stats = None
+        if
+          List.find_opt (fun (_, expr') -> String.equal expr expr') stats
+          = None
         then ([(id, idx)], expr) :: stats
         else
           List.map
@@ -262,10 +264,9 @@ let generate_statement env params =
             stats )
       [] statements
     |> List.map (fun (ids, expr) ->
-      let ids = Array.of_list ids in
-      Array.fast_sort (fun (_, idx1) (_, idx2) -> idx1 - idx2) ids;
-      Array.map fst ids, expr
-    )
+           let ids = Array.of_list ids in
+           Array.fast_sort (fun (_, idx1) (_, idx2) -> idx1 - idx2) ids ;
+           (Array.map fst ids, expr) )
   in
   let statements = List.rev statements in
   (* merge done *)
@@ -284,7 +285,7 @@ let codegen_ast_json env =
   let env = add_temp_var_for_multi_ret env in
   let env = dedup env in
   let declare = generate_node_declare env in
-  let statements = generate_statement env declare.params in
+  let statements = generate_statement env declare.statics declare.params in
   let open! Json.Encode in
   let json =
     object_

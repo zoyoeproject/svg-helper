@@ -83,7 +83,10 @@ let generate_context_from_env prompt parse parent_div env =
         | LocalAssum (id, t) ->
             let name = Id.to_string id in
             let ret_name = Name.mk_name id in
-            let input = Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] Node.CategoryParameter in
+            (* maybe error of cic-parser *)
+            let static = not (Id.Set.mem id env.env_static) in
+            let category = if static then Node.CategoryStaticParameter else Node.CategoryParameter in
+            let input = Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] category in
             ctxt.nodes
             <- Context.NodeMap.add name (mk_graph_node input) ctxt.nodes ;
             Id.Map.add id (Some (mk_path name ret_name true)) inputs
