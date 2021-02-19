@@ -34,6 +34,24 @@ let unit_to_string c =
       Js.log c ;
       assert false
 
+let sort_static env statics =
+  let open MiniCic.Constr in
+  Array.of_list statics
+  |> Array.map (fun dec ->
+    dec,
+    let rec aux deps c =
+      match c with
+      | Var id -> Id.Set.add id deps
+      | _ -> MiniCic.Constr.fold aux deps c
+    in
+    match MiniCic.Env.lookup_named dec.name env with
+    | LocalAssum (_, t) ->
+      aux Id.Set.empty t
+    | _ ->
+      assert false
+  ) |> TopoSort.topo_sort (fun dec -> Id.Set.remove dec.name) Id.Set.cardinal
+  |> Array.to_list
+
 let generate_node_declare env =
   let statics, params, vars, returns =
     Id.Map.fold
@@ -53,6 +71,7 @@ let generate_node_declare env =
             else (statics, params, dec :: vars, returns) )
       env.env_named_context ([], [], [], [])
   in
+  let statics = sort_static env statics in
   {statics; params; returns; vars}
 
 let is_case_info_bool ci =
@@ -294,7 +313,8 @@ let codegen_ast_json env =
   Js.log (Json.stringify json) ;
   json
 
-let codegen_from_ctx env =
+let codegen_from_ctx () =
   let ctxt = Context.get_global_context () in
+  let env = ctxt.env in
   let env = CfgEditor.generate_env_from_node_map ctxt env in
   codegen_ast_json env
