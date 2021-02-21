@@ -11,10 +11,10 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
-let generate_context_from_env prompt parse parent_div env =
+let generate_context_from_env mode prompt parse parent_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
-  let ctxt = Context.init_context prompt env parse parent_div Context.NodeMap.empty in
+  let ctxt = Context.init_context mode prompt env parse parent_div Context.NodeMap.empty in
   (*
    * TODO we need to make sure c is a closed term
    * If c is not closed than we need to fill make it closed using
@@ -36,7 +36,7 @@ let generate_context_from_env prompt parse parent_div env =
               let node =
                 Component.constant_to_node_with_params
                   (c, entry.entry_type, entry.info)
-                  node_name inputs Node.CategoryFunction
+                  node_name Node.CategoryFunction inputs
               in
               ctxt.nodes
               <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes ;
@@ -57,8 +57,7 @@ let generate_context_from_env prompt parse parent_div env =
     | Case (ci, _, cond, args) ->
         let node_name = Context.new_ssa ctxt in
         let ret_name = Name.Anonymous in
-        let key, idx = ci.ci_ind in
-        let node = Component.ind_to_node env key idx node_name Node.CategoryCase in
+        let node = Component.ind_to_node env ci.ci_ind node_name Node.CategoryCase in
         node.inputs.(0) <- {(node.inputs.(0)) with input= aux input_map 0 cond} ;
         Array.iteri
           (fun i c ->
@@ -271,9 +270,9 @@ let generate_env_from_node_map ctxt default_env =
     Js.log "type check failed" ;
     assert false )
 
-let build_cfg prompt parse tool_div parent_div env =
+let build_cfg mode prompt parse tool_div parent_div env =
   Js.log env ;
-  let ctxt = generate_context_from_env prompt parse parent_div env in
+  let ctxt = generate_context_from_env mode prompt parse parent_div env in
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes ;
   Flowgraph.init_flowgraph env ctxt parent_div ;
@@ -289,3 +288,6 @@ let build_cfg prompt parse tool_div parent_div env =
       (Component.mk_ind_map ()) env
   in
   Component.init_component_bar env ctxt tool_div constant_map ind_map
+
+let build_simple_cfg = build_cfg Context.ModeSimple
+let build_surely_cfg = build_cfg Context.ModeSurely

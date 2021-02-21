@@ -83,7 +83,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
   ignore @@ Polygon.mk_rectangle_in parent "default" (w,h) (x1,y1);
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
     let ax, ay = x1, (get_ancher y1 h (Array.length node.inputs) i) in
-    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let circle = Circle.mk_circle parent "default" 3 (ax, ay) in
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (ax + 5, ay + 2) name in
     if (not as_tool) then set_input_ancher context node.name input circle;
@@ -91,7 +91,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
   ) (text, 0) (node.inputs:param array) in
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
     let ax, ay = x2, (get_ancher y1 h (Array.length node.outputs) i) in
-    let circle = Circle.mk_circle_in parent "default" 3 (ax, ay) in
+    let circle = Circle.mk_circle parent "default" 3 (ax, ay) in
     let text = match output with
       | Name.Anonymous -> ""
       | Name.Name id -> Utils.mk_text "default" (ax - 10, ay + 2) (Id.to_string id)
@@ -104,7 +104,7 @@ let draw_normal context parent node (cx, cy) (w,h) as_tool =
 
 let draw_input context parent node (cx, cy) (w, h) =
   let txt, _ = Array.fold_left (fun (svg, i) (output,typ) ->
-    let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
+    let circle = Circle.mk_circle parent "default" (w/2) (cx, cy) in
     let text = match output with
       | Name.Anonymous -> ""
       | Name.Name id -> Utils.mk_text "default" (cx + w/2, cy - h/2) (Id.to_string id)
@@ -116,7 +116,7 @@ let draw_input context parent node (cx, cy) (w, h) =
 
 let draw_output context parent node (cx, cy) (w, h) =
   let txt, _ = Array.fold_left (fun (svg, i) (input:param) ->
-    let circle = Circle.mk_circle_in parent "default" (w/2) (cx, cy) in
+    let circle = Circle.mk_circle parent "default" (w/2) (cx, cy) in
     let name, _ = input.para_info in
     let text = Utils.mk_text "default" (cx - w/2 , cy - h/2) name in
     set_input_ancher context node.name input circle;
@@ -132,7 +132,7 @@ let draw_var context parent node (cx, cy) (w,_) as_tool =
     | CategoryStaticParameter -> "default-static"
     | _ -> "default"
   in
-  let circle = Circle.mk_circle_in parent style (w/2) (cx, cy) in
+  let circle = Circle.mk_circle parent style (w/2) (cx, cy) in
   let text = Utils.mk_text "default" (cx, cy - 10) (print_var node.src) in
   if (Array.length node.inputs != 0) then begin
       let input = node.inputs.(0) in

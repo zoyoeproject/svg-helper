@@ -2,11 +2,8 @@ module NodeMap = Map.Make (String)
 module Names = MiniCic.Names
 module Constr = MiniCic.Constr
 
-type node_map = (Node.t DagreFFI.node_size) NodeMap.t
 type node = Node.t DagreFFI.node_size
-
-(* body -> category -> type *)
-type constr_promise = (Constr.t -> Node.node_category -> Constr.t -> unit) -> unit
+type node_map = node NodeMap.t
 
 type constr_encoder = string array -> Constr.t
 
@@ -16,9 +13,17 @@ type prompt_info = {
   default: string;
 }
 
+type mode =
+  | ModeSimple
+  | ModeSurely
+
+type creator =
+  | CreatorNode of Constr.t
+  | CreatorVar
+
 type focus =
-  | Connect of (Document.element * (Node.var * Constr.t))
-  | Create of (Document.element * (constr_promise * Constr.t))
+  | Connect of Document.element * (Node.var * Constr.t)
+  | Create of Document.element * creator
 
 type context_info = {
   mutable ssa_count: int;
@@ -29,36 +34,8 @@ type context_info = {
   mutable prompt: prompt_info array -> (string array -> unit) -> unit;
   mutable env: MiniCic.Env.env;
   parse: string -> MiniCic.Env.env -> MiniCic.Constr.t;
+  mode: mode;
 }
-
-let mk_var_promise context f =
-  let open MiniCic.Env in
-  context.prompt [|
-    {label="var name"; info="text"; default=""};
-    {label="category"; info="static parameter|parameter|var|return"; default="var"};
-    {label="type"; info="text"; default=""} |]
-    (fun args ->
-      let category = match args.(1) with
-      | "static parameter" -> Node.CategoryStaticParameter
-      | "parameter" -> Node.CategoryParameter
-      | "var" -> Node.CategoryVar
-      | "return" -> Node.CategoryReturn
-      | _ -> assert false
-      in
-      let typ = context.parse args.(2) context.env in
-      if category = Node.CategoryStaticParameter then
-        context.env <- push_named (LocalAssum (args.(0), typ)) ~static:true context.env;
-        Js.log context.env;
-      f (Constr.mkVar (Names.Id.to_string args.(0))) category typ
-    )
-
-(* MiniCic.Constr.Int 0 is a place holder, it is useless *)
-let mk_constant_promise c f =
-  f c Node.CategoryFunction (MiniCic.Constr.Int 0)
-
-(* MiniCic.Constr.Int 0 is a place holder, it is useless *)
-let mk_ind_promise c f =
-  f c Node.CategoryCase (MiniCic.Constr.Int 0)
 
 let new_ssa ctxt =
   ctxt.ssa_count <- ctxt.ssa_count + 1;
@@ -155,7 +132,7 @@ let get_global_context () =
   | Some ctxt ->
     ctxt
 
-let init_context prompt env parse parent nodes =
+let init_context mode prompt env parse parent nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes;
   global_ctxt := Some {
@@ -167,6 +144,7 @@ let init_context prompt env parse parent nodes =
     prompt = prompt;
     env = env;
     parse = parse;
+    mode = mode;
   };
   get_global_context()
 
