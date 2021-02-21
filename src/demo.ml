@@ -30,4 +30,4 @@ let default_parse _ _ =
   int_type
 
 let display_env_as_cfg prompt parse tool_div parent env =
-  ignore @@ CfgEditor.build_simple_cfg prompt parse tool_div parent env
+  ignore @@ CfgEditor.build_cfg prompt parse tool_div parent env

@@ -81,18 +81,16 @@ let init_flowgraph env context svgele =
   Utils.on_mouseclick_set svgele (fun e ->
       match Context.get_focus_create context with
       | Some creator -> (
+        Context.clear_focus context ;
+        Utils.restore_cfg_cursor context.cfg_ele ;
         match creator with
         | CreatorNode c ->
-            Context.clear_focus context ;
-            Utils.restore_cfg_cursor context.cfg_ele ;
             let node =
               Component.node_constr_to_node env c (Context.new_ssa context)
             in
             add_node context node Document.(e.offsetX, e.offsetY)
         | CreatorVar ->
             let f c category typ =
-              Context.clear_focus context ;
-              Utils.restore_cfg_cursor context.cfg_ele ;
               let node =
                 Component.var_constr_to_node c (Context.new_ssa context) typ
                   category

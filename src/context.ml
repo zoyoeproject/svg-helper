@@ -13,10 +13,6 @@ type prompt_info = {
   default: string;
 }
 
-type mode =
-  | ModeSimple
-  | ModeSurely
-
 type creator =
   | CreatorNode of Constr.t
   | CreatorVar
@@ -34,7 +30,6 @@ type context_info = {
   mutable prompt: prompt_info array -> (string array -> unit) -> unit;
   mutable env: MiniCic.Env.env;
   parse: string -> MiniCic.Env.env -> MiniCic.Constr.t;
-  mode: mode;
 }
 
 let new_ssa ctxt =
@@ -132,7 +127,7 @@ let get_global_context () =
   | Some ctxt ->
     ctxt
 
-let init_context mode prompt env parse parent nodes =
+let init_context prompt env parse parent nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes;
   global_ctxt := Some {
@@ -144,7 +139,6 @@ let init_context mode prompt env parse parent nodes =
     prompt = prompt;
     env = env;
     parse = parse;
-    mode = mode;
   };
   get_global_context()
 
