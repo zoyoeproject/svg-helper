@@ -203,6 +203,8 @@ let set_var_ancher context node item =
             node.outputs <- new_node.outputs ;
             node.category <- category ;
             if Array.length node.inputs > 0 then
+              _set_input_ancher context node.name node.inputs.(0) item ;
+            if Array.length node.inputs > 0 then
               (node.inputs.(0)).input <- value ;
             update_edges context ;
             update_var_style node item ) ) )
