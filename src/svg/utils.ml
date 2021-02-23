@@ -38,6 +38,9 @@ let on_mouseup_set item call_back =
 let on_mousemove_set item call_back =
   Document.add_event_listener item "mousemove" call_back
 
+let on_contextmenu_set item call_back =
+  Document.add_event_listener item "contextmenu" call_back
+
 let init_dragdrop_item _ (*parent*) item callback context =
   let open Context in
   let handle_mouse_down _ = context.dragdrop <- Some (item, callback) in
@@ -53,7 +56,10 @@ let get_translate_info i =
 
 let set_cfg_cursor parent svg =
   let style = parent |. Document.style in
-  let prop = "font-size=\"10px\" font-family=\"Source Serif Pro\" fill=\"none\" stroke=\"black\"" in
+  let prop =
+    "font-size=\"10px\" font-family=\"Source Serif Pro\" fill=\"none\" \
+     stroke=\"black\""
+  in
   Document.setCursor style
   @@ Printf.sprintf
        "url('data:image/svg+xml;utf8,<svg height=\"64\" width=\"64\" \

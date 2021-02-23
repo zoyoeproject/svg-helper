@@ -11,10 +11,13 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
-let generate_context_from_env prompt parse parent_div env =
+let generate_context_from_env prompt parse_type parse_expr parent_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
-  let ctxt = Context.init_context prompt env parse parent_div Context.NodeMap.empty in
+  let ctxt =
+    Context.init_context prompt env parse_type parse_expr parent_div
+      Context.NodeMap.empty
+  in
   (*
    * TODO we need to make sure c is a closed term
    * If c is not closed than we need to fill make it closed using
@@ -34,9 +37,8 @@ let generate_context_from_env prompt parse parent_div env =
           | None ->
               let node_name = Context.new_ssa ctxt in
               let node =
-                Component.constant_to_node_with_params
-                  (c, entry)
-                  node_name Node.CategoryFunction inputs
+                Component.constant_to_node_with_params (c, entry) node_name
+                  Node.CategoryFunction inputs
               in
               ctxt.nodes
               <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes ;
@@ -57,7 +59,9 @@ let generate_context_from_env prompt parse parent_div env =
     | Case (ci, _, cond, args) ->
         let node_name = Context.new_ssa ctxt in
         let ret_name = Name.Anonymous in
-        let node = Component.ind_to_node env ci.ci_ind node_name Node.CategoryCase in
+        let node =
+          Component.ind_to_node env ci.ci_ind node_name Node.CategoryCase
+        in
         node.inputs.(0) <- {(node.inputs.(0)) with input= aux input_map 0 cond} ;
         Array.iteri
           (fun i c ->
@@ -67,8 +71,7 @@ let generate_context_from_env prompt parse parent_div env =
         ctxt.nodes
         <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes ;
         Some (mk_path node_name ret_name true)
-    | Const _ ->
-        Some (mk_var e)
+    | Const _ -> Some (mk_var e)
     | _ -> (* FIXME: This is not right *)
            assert false
   (* fold_with_full_binders push_local_def aux input_map 0 c*)
@@ -86,8 +89,13 @@ let generate_context_from_env prompt parse parent_div env =
             let ret_name = Name.mk_name id in
             (* maybe error of cic-parser *)
             let static = Id.Set.mem id env.env_static in
-            let category = if static then Node.CategoryStaticParameter else Node.CategoryParameter in
-            let input = Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] category in
+            let category =
+              if static then Node.CategoryStaticParameter
+              else Node.CategoryParameter
+            in
+            let input =
+              Node.mk_node name (mkVar id) [||] [|(ret_name, t)|] category
+            in
             ctxt.nodes
             <- Context.NodeMap.add name (mk_graph_node input) ctxt.nodes ;
             Id.Map.add id (Some (mk_path name ret_name true)) inputs
@@ -105,10 +113,12 @@ let generate_context_from_env prompt parse parent_div env =
           let local_node =
             if MiniCic.Env.is_exported id env then
               Node.mk_node (Id.to_string id) (mkVar id) input
-                [|(Name.Name id, typ)|] Node.CategoryReturn
+                [|(Name.Name id, typ)|]
+                Node.CategoryReturn
             else
               Node.mk_node (Id.to_string id) (mkVar id) input
-                [|(Name.Name id, typ)|] Node.CategoryVar
+                [|(Name.Name id, typ)|]
+                Node.CategoryVar
           in
           ctxt.nodes
           <- Context.NodeMap.add (Id.to_string id) (mk_graph_node local_node)
@@ -242,8 +252,15 @@ let _generate_env_from_node_map node_map default_env =
                 let body = args.(0) in
                 LocalDef (id, body, typ)
             in
-            let env = if n.category = Node.CategoryReturn then MiniCic.Env.export id env else env in
-            (n.src, MiniCic.Env.push_named d ~static:(n.category = Node.CategoryStaticParameter) env)
+            let env =
+              if n.category = Node.CategoryReturn then
+                MiniCic.Env.export id env
+              else env
+            in
+            ( n.src
+            , MiniCic.Env.push_named d
+                ~static:(n.category = Node.CategoryStaticParameter)
+                env )
         | App (c, [||]) -> (App (c, args), env)
         | Int _ -> (n.src, env)
         | Case (ci, _, _, [||]) ->
@@ -272,9 +289,10 @@ let generate_env_from_node_map ctxt default_env =
     Js.log "type check failed" ;
     assert false )
 
-let build_cfg prompt parse tool_div parent_div env =
-  Js.log env ;
-  let ctxt = generate_context_from_env prompt parse parent_div env in
+let build_cfg prompt parse_type parse_expr tool_div parent_div env =
+  let ctxt =
+    generate_context_from_env prompt parse_type parse_expr parent_div env
+  in
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes ;
   Flowgraph.init_flowgraph env ctxt parent_div ;
@@ -290,3 +308,9 @@ let build_cfg prompt parse tool_div parent_div env =
       (Component.mk_ind_map ()) env
   in
   Component.init_component_bar env ctxt tool_div constant_map ind_map
+
+let codegen_from_ctx () =
+  let ctxt = Context.get_global_context () in
+  let env = ctxt.env in
+  let env = generate_env_from_node_map ctxt env in
+  LustreCodegen.codegen_ast_json env

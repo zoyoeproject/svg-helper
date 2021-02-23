@@ -1,4 +1,5 @@
 open Node
+open NodeShape
 open MiniCic.CoreType
 open MiniCic.Names
 open MiniCic.Constr
@@ -93,13 +94,129 @@ let input_node c =
 type component_bar =
   {container: Document.element; components: Node.t ConstantMap.t}
 
+let _set_input_ancher context node_name input item =
+  Utils.on_mousedoubleclick_set item (fun _ ->
+      let _ =
+        match input.input with Some _ -> input.input <- None | _ -> ()
+      in
+      update_edges context ) ;
+  Utils.on_mouseclick_set item (fun _ ->
+      let _, _ (*tin*) = input.para_info in
+      let _ =
+        match input.input with
+        | None -> (
+          match Context.get_focus_connect context with
+          | Some (PATH (focused_node_name, na, _), _ (*tout*))
+            when focused_node_name != node_name ->
+              Js.log focused_node_name ;
+              Js.log na ;
+              input.input <- Some (PATH (focused_node_name, na, true))
+          | Some (VAR (n, _), _) -> input.input <- Some (VAR (n, true))
+          | _ -> () )
+        | _ -> ()
+      in
+      update_edges context )
+
+let set_input_ancher context node_name input item =
+  _set_input_ancher context node_name input item ;
+  Utils.on_contextmenu_set item (fun e ->
+      Document.stopPropagation e ;
+      Document.preventDefault e ;
+      let default =
+        match input.input with
+        | Some (VAR (c, _)) -> LustreCodegen.unit_to_string c
+        | _ -> ""
+      in
+      context.prompt "Set Constant Value as Input"
+        [|{label= "value"; info= "text"; default}|]
+        (fun args ->
+          ( if args.(0) = "" then input.input <- None
+          else
+            let c = context.parse_expr args.(0) context.env in
+            input.input <- Some (VAR (c, true)) ) ;
+          update_edges context ) )
+
+let set_output_ancher context item output =
+  Utils.on_mouseclick_set item (fun _ ->
+      Context.toggle_focus context (Connect (item, output)) )
+
+let set_var_ancher context node item =
+  if Array.length node.inputs > 0 then
+    _set_input_ancher context node.name node.inputs.(0) item ;
+  if Array.length node.outputs > 0 then (
+    let output, typ = node.outputs.(0) in
+    set_output_ancher context item (Node.mk_path node.name output false, typ) ;
+    Utils.on_contextmenu_set item (fun e ->
+        let open Context in
+        Document.stopPropagation e ;
+        Document.preventDefault e ;
+        let id = LustreCodegen.unit_to_string node.src in
+        let category =
+          Node.category_string_pairs
+          |> List.find (fun pair -> snd pair = node.category)
+          |> fst
+        in
+        let typ = snd node.outputs.(0) |> LustreCodegen.unit_to_string in
+        let default =
+          match Array.length node.inputs with
+          | 0 -> ""
+          | _ -> (
+            match node.inputs.(0).input with
+            | Some (VAR (c, _)) -> print_var c
+            | _ -> "" )
+        in
+        context.prompt "Variable Property"
+          [| {label= "var name"; info= "text"; default= id}
+           ; { label= "category"
+             ; info= "static parameter|parameter|var|return"
+             ; default= category }
+           ; {label= "type"; info= "text"; default= typ}
+           ; {label= "value"; info= "text"; default} |]
+          (fun args ->
+            (* cleanup *)
+            if node.category = Node.CategoryStaticParameter then
+              context.env <- MiniCic.Env.remove_named id context.env ;
+            (* parse *)
+            let id = args.(0) in
+            let category =
+              List.find (fun (str, _) -> str = args.(1)) category_string_pairs
+              |> snd
+            in
+            let typ = context.parse_type args.(2) context.env in
+            let value =
+              match args.(3) with
+              | "" -> None
+              | v -> Some (Node.VAR (context.parse_expr v context.env, true))
+            in
+            if category = Node.CategoryStaticParameter then
+              context.env
+              <- MiniCic.Env.push_named
+                   (LocalAssum (args.(0), typ))
+                   ~static:true context.env ;
+            (* update node *)
+            let new_node =
+              var_constr_to_node (Constr.mkVar id) (Context.new_ssa context)
+                typ category
+            in
+            node.src <- new_node.src ;
+            node.inputs <- new_node.inputs ;
+            node.outputs <- new_node.outputs ;
+            node.category <- category ;
+            if Array.length node.inputs > 0 then
+              (node.inputs.(0)).input <- value ;
+            update_edges context ;
+            update_var_style node item ) ) )
+
 let font_size = 10
 
 let draw_node_as_tool context parent node =
   let center = (25, 40) in
   let sz = compute_size node in
-  if isVar node.src then NodeShape.draw_var context parent node center sz true
-  else NodeShape.draw_normal context parent node center sz true
+  if isVar node.src then
+    NodeShape.draw_var context parent node center sz true set_var_ancher
+  else
+    NodeShape.draw_normal context parent node center sz true set_input_ancher
+      set_output_ancher
 
 let add_to_component_bar context parent shift c =
   (* MiniCic.Constr.Int 0 is a placeholder, it is useless *)
