@@ -11,11 +11,11 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
-let generate_context_from_env prompt parse_type parse_expr parent_div env =
+let generate_context_from_env prompt parse_type parse_expr parent_div param_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
   let ctxt =
-    Context.init_context prompt env parse_type parse_expr parent_div
+    Context.init_context prompt env parse_type parse_expr parent_div param_div
       Context.NodeMap.empty
   in
   (*
@@ -289,9 +289,9 @@ let generate_env_from_node_map ctxt default_env =
     Js.log "type check failed" ;
     assert false )
 
-let build_cfg prompt parse_type parse_expr tool_div parent_div env =
+let build_cfg prompt parse_type parse_expr tool_div param_div parent_div env =
   let ctxt =
-    generate_context_from_env prompt parse_type parse_expr parent_div env
+    generate_context_from_env prompt parse_type parse_expr param_div parent_div env
   in
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes ;

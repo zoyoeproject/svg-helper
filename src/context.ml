@@ -21,6 +21,7 @@ type context_info =
   ; mutable dragdrop: (Document.element * (Document.element -> unit)) option
   ; mutable focus: focus option
   ; mutable cfg_ele: Document.element
+  ; mutable cfg_param_ele: Document.element
   ; mutable nodes: Node.t DagreFFI.node_size NodeMap.t
   ; mutable prompt:
       string -> prompt_info array -> (string array -> unit) -> unit
@@ -117,13 +118,14 @@ let get_global_context () =
       assert false
   | Some ctxt -> ctxt
 
-let init_context prompt env parse_type parse_expr parent nodes =
+let init_context prompt env parse_type parse_expr parent param_div nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes ;
   global_ctxt :=
     Some
       { ssa_count= 0
       ; cfg_ele= parent
+      ; cfg_param_ele= param_div
       ; dragdrop= None
       ; focus= None
       ; nodes
