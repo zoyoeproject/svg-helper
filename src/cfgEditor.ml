@@ -11,11 +11,11 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
-let generate_context_from_env prompt parse_type parse_expr parent_div param_div env =
+let generate_context_from_env prompt parse_type parse_expr param_div parent_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
   let ctxt =
-    Context.init_context prompt env parse_type parse_expr parent_div param_div
+    Context.init_context prompt env parse_type parse_expr param_div parent_div
       Context.NodeMap.empty
   in
   (*

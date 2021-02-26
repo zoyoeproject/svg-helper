@@ -118,13 +118,13 @@ let get_global_context () =
       assert false
   | Some ctxt -> ctxt
 
-let init_context prompt env parse_type parse_expr parent param_div nodes =
+let init_context prompt env parse_type parse_expr param_div svg_div nodes =
   let graph = DagreFFI.create_graph () in
   init_layout graph nodes ;
   global_ctxt :=
     Some
       { ssa_count= 0
-      ; cfg_ele= parent
+      ; cfg_ele= svg_div
       ; cfg_param_ele= param_div
       ; dragdrop= None
       ; focus= None
