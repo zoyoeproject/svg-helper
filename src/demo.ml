@@ -32,6 +32,6 @@ let default_parse _ _ =
   let open MiniCic.CoreType in
   int_type
 
-let display_env_as_cfg prompt parse_type parse_expr tool_div parent env =
+let display_env_as_cfg prompt parse_type parse_expr tool_div param_div svg_div env =
   ignore
-  @@ CfgEditor.build_cfg prompt parse_type parse_expr tool_div parent env
+  @@ CfgEditor.build_cfg prompt parse_type parse_expr tool_div param_div svg_div env
