@@ -4,6 +4,7 @@ open MiniCic.Constr
 open MiniCic.Names
 open MiniCic.Context.Named.Declaration
 open MiniCic.Prod
+open Exceptions
 
 (* FIXME! how to make prod? *)
 let c_case =
@@ -186,6 +187,7 @@ let type_check_all_nodes ctxt =
           let new_input =
             match param.input with
             | None ->
+                raise (CodeGenerationFail ("Miss input for \"" ^ NodeShape.print_var node.src ^ "\""))
                 global_type_safe := false ;
                 None
             | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
@@ -223,7 +225,7 @@ let _generate_env_from_node_map node_map default_env =
           (fun (env, i) param ->
             let body, env =
               match param.input with
-              | None -> assert false
+              | None -> raise (CodeGenerationFail ("Miss input for " ^ NodeShape.print_var n.src))
               | Some (VAR (c, _)) -> (c, env)
               | Some (PATH (in_node_name, ret_name, _)) ->
                   let in_graph_node =

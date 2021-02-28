@@ -151,27 +151,27 @@ let set_var_ancher context node item =
   Utils.on_mouseclick_set item (fun _ ->
       if Array.length node.inputs > 0 then
         let input = node.inputs.(0) in
-        ignore
-        @@
-        match input.input with
-        | None -> (
-          match Context.get_focus_connect context with
-          | Some (PATH (focused_node_name, na, _), _ (*tout*))
-            when focused_node_name != node.name ->
-              Js.log focused_node_name ;
-              Js.log na ;
-              input.input <- Some (PATH (focused_node_name, na, true))
-          | Some (VAR (n, _), _) -> input.input <- Some (VAR (n, true))
-          | _ -> () )
-        | _ ->
-            () ;
-            ( if Array.length node.outputs > 0 then
-              let output, typ = node.outputs.(0) in
-              ignore
-              @@ Context.toggle_focus context
-                   (Connect (item, (Node.mk_path node.name output false, typ)))
-            ) ;
-            update_edges context ) ;
+        let _ =
+          match input.input with
+          | None -> (
+            match Context.get_focus_connect context with
+            | Some (PATH (focused_node_name, na, _), _ (*tout*))
+              when focused_node_name != node.name ->
+                Js.log focused_node_name ;
+                Js.log na ;
+                input.input <- Some (PATH (focused_node_name, na, true))
+            | Some (VAR (n, _), _) -> input.input <- Some (VAR (n, true))
+            | _ -> () )
+          | _ ->
+              () ;
+              ( if Array.length node.outputs > 0 then
+                let output, typ = node.outputs.(0) in
+                ignore
+                @@ Context.toggle_focus context
+                    (Connect (item, (Node.mk_path node.name output false, typ)))
+              ) ;
+        in
+        update_edges context ) ;
   Utils.on_contextmenu_set item (fun e ->
       let open Context in
       Document.stopPropagation e ;
