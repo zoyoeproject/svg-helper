@@ -157,48 +157,61 @@ let get_src_type node_map param =
 let type_check_all_nodes ctxt =
   let open Context in
   let node_map = ctxt.nodes in
-  let global_type_safe = ref true in
-  Context.node_map_sorted_iter
-    (fun _ node ->
-      let node = DagreFFI.extract node in
-      (* For Case, we update the input/output type to the first case branch *)
-      let () =
-        match node.src with
-        | Case (_, _, _, _) ->
-            let default_typ = get_src_type node_map node.inputs.(1) in
-            Js.log default_typ ;
-            Array.iteri
-              (fun i param ->
-                if i > 0 then
-                  (node.inputs.(i)).para_info
-                  <- (fst param.para_info, default_typ) )
-              node.inputs ;
-            Array.iteri
-              (fun i (name, _) -> node.outputs.(i) <- (name, default_typ))
-              node.outputs
-        | _ -> ()
-      in
+  let error = ref "" in
+  (* For Case, we update the input/output type to the first case branch *)
+  let update_case_type node =
+    match node.src with
+    | Case (_, _, _, _) ->
+      let default_typ = get_src_type node_map node.inputs.(1) in
+      Js.log default_typ ;
       Array.iteri
         (fun i param ->
-          let dst_type = snd param.para_info in
-          let src_typ = get_src_type node_map param in
-          let type_safe = MiniCic.Constr.compare src_typ dst_type = 0 in
-          if not type_safe then global_type_safe := false ;
-          let new_input =
-            match param.input with
-            | None ->
-                raise (CodeGenerationFail ("Miss input for \"" ^ NodeShape.print_var node.src ^ "\""))
-                global_type_safe := false ;
-                None
-            | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
-            | Some (PATH (in_node_name, ret_name, _)) ->
-                Some (PATH (in_node_name, ret_name, type_safe))
-          in
-          (node.inputs.(i)).input <- new_input )
-        node.inputs )
-    node_map ;
-  NodeShape.update_edges ctxt ;
-  !global_type_safe
+          if i > 0 then
+            (node.inputs.(i)).para_info
+            <- (fst param.para_info, default_typ) )
+        node.inputs ;
+      Array.iteri
+        (fun i (name, _) -> node.outputs.(i) <- (name, default_typ))
+        node.outputs
+    | _ -> ()
+  in
+  let update_input_type_safe node i param =
+    let dst_type = snd param.para_info in
+    let src_typ = get_src_type node_map param in
+    let type_safe = MiniCic.Constr.compare src_typ dst_type = 0 in
+    if not type_safe then
+      error := ("Type check error for \"" ^ NodeShape.print_var node.src ^ "\"");
+    let new_input =
+      match param.input with
+      | None ->
+        error := "Miss input for \"" ^ NodeShape.print_var node.src ^ "\"";
+        None
+      | Some (VAR (c, _)) -> Some (VAR (c, type_safe))
+      | Some (PATH (in_node_name, ret_name, _)) ->
+          Some (PATH (in_node_name, ret_name, type_safe))
+    in
+    (node.inputs.(i)).input <- new_input ;
+    if !error <> "" then
+      raise (CODEGEN_FAIL !error)
+  in
+  let aux _ node =
+    let node = DagreFFI.extract node in
+    update_case_type node;
+    Array.iteri (update_input_type_safe node) node.inputs
+  in
+  let () =
+    try
+      Context.node_map_sorted_iter aux node_map
+    with e ->
+      let () =
+        match e with
+        | TopoSort.TOPO_SORT_CIRCLE ->
+          error := "circle detected"
+        | _ -> ()
+      in
+      NodeShape.update_edges ctxt
+  in
+  !error
 
 let _generate_env_from_node_map node_map default_env =
   let env = default_env in
@@ -225,7 +238,7 @@ let _generate_env_from_node_map node_map default_env =
           (fun (env, i) param ->
             let body, env =
               match param.input with
-              | None -> raise (CodeGenerationFail ("Miss input for " ^ NodeShape.print_var n.src))
+              | None -> raise (CODEGEN_FAIL ("Miss input for " ^ NodeShape.print_var n.src))
               | Some (VAR (c, _)) -> (c, env)
               | Some (PATH (in_node_name, ret_name, _)) ->
                   let in_graph_node =
@@ -285,11 +298,11 @@ let _generate_env_from_node_map node_map default_env =
     node_map env
 
 let generate_env_from_node_map ctxt default_env =
-  if type_check_all_nodes ctxt then
+  let error = type_check_all_nodes ctxt in
+  if error = "" then
     _generate_env_from_node_map ctxt.nodes default_env
-  else (
-    Js.log "type check failed" ;
-    assert false )
+  else
+    raise (CODEGEN_FAIL error)
 
 let build_cfg prompt parse_type parse_expr tool_div param_div parent_div env =
   let ctxt =

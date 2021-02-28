@@ -1,3 +1,5 @@
+exception TOPO_SORT_CIRCLE
+
 (* elements is (ele, deps) array *)
 let topo_sort f_dec_deps f_cardinal_deps elements =
   let len = Array.length elements in
@@ -11,7 +13,7 @@ let topo_sort f_dec_deps f_cardinal_deps elements =
       let curr, curr_d, _ = elements.(idx) in
       if f_cardinal_deps curr_d > 0 then (
         Js.log "circle detected in topo_sort" ;
-        assert false )
+        raise TOPO_SORT_CIRCLE )
       else (
         elements.(idx) <- (curr, curr_d, idx) ;
         Array.iteri
