@@ -214,7 +214,11 @@ let set_var_ancher context node item =
             | "" ->
                 if Array.length node.inputs > 0 then node.inputs.(0).input
                 else None
-            | v -> Some (Node.VAR (context.parse_expr v context.env, true))
+            | v ->
+              try Some (Node.VAR (context.parse_expr v context.env, true))
+              with e ->
+                Js.log e;
+                raise (Exceptions.CFG_ERROR ("Fail to parse expr \"" ^ v ^ "\""))
           in
           if category = Node.CategoryStaticParameter then
             context.env

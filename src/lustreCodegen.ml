@@ -318,6 +318,8 @@ let codegen_ast_json env =
   let env = add_temp_var_for_multi_ret env in
   let env = dedup env in
   let declare = generate_node_declare env in
+  if List.length declare.returns = 0 then
+    raise (Exceptions.CODEGEN_FAIL "no return value detected");
   let statements = generate_statement env declare.statics declare.params in
   let open! Json.Encode in
   let json =

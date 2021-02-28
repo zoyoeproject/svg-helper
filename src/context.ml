@@ -115,7 +115,7 @@ let get_global_context () =
   match !global_ctxt with
   | None ->
       Js.log "global context hasn't been init" ;
-      assert false
+      raise (Exceptions.CFG_ERROR "CFG has not been initialized")
   | Some ctxt -> ctxt
 
 let init_context prompt env parse_type parse_expr param_div svg_div nodes =
