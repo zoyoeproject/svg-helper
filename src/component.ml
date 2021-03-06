@@ -163,7 +163,13 @@ let set_var_ancher context node item =
                   Js.log na;
                   input.input <- Some (PATH (focused_node_name, na, true))
               | Some (VAR (n, _), _) -> input.input <- Some (VAR (n, true))
-              | _ -> ())
+              | _ ->
+                  if Array.length node.outputs > 0 then
+                    let output, typ = node.outputs.(0) in
+                    ignore
+                    @@ Context.toggle_focus context
+                         (Connect
+                            (item, (Node.mk_path node.name output false, typ))))
           | _ ->
               ();
               if Array.length node.outputs > 0 then
