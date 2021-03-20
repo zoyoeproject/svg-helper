@@ -99,17 +99,22 @@ let init_flowgraph env context svgele =
                         (Exceptions.CFG_ERROR
                            ("\"" ^ args.(0) ^ "\" already exists"))
                   | None ->
-                      if category = Node.CategoryStaticParameter then
-                        context.env <-
-                          MiniCic.Env.push_named
-                            (LocalAssum (args.(0), typ))
-                            ~static:true context.env;
-                      let node =
-                        Component.var_constr_to_node
-                          (Constr.mkVar (Names.Id.to_string args.(0)))
-                          (Context.new_ssa context) typ category
+                      let () =
+                        if category = Node.CategoryStaticParameter then
+                          context.env <-
+                            MiniCic.Env.push_named
+                              (LocalAssum (args.(0), typ))
+                              ~static:true context.env
                       in
-                      add_node context node Document.(e.offsetX, e.offsetY)))
+                      if (MiniCic.Constr.isProd typ) then
+                        Component.init_implicit_bar context.env context context.cfg_param_ele
+                      else
+                        let node =
+                          Component.var_constr_to_node
+                            (Constr.mkVar (Names.Id.to_string args.(0)))
+                            (Context.new_ssa context) typ category
+                        in
+                        add_node context node Document.(e.offsetX, e.offsetY)))
       | _ -> ());
   Utils.on_contextmenu_set svgele (fun e ->
       match Context.get_focus_create context with

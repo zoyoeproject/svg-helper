@@ -345,7 +345,7 @@ let init_implicit_bar env context div =
       | LocalDef (id, _, typ) -> id, typ
       | LocalAssum (id, typ) -> id, typ
   ) (Id.Set.elements static_map) in
-  let static_prod_list = List.filter (fun (_, typ) -> isProd typ) static_list in
+  let static_prod_list = List.filter (fun (_, typ) -> Js.log (MiniCic.Pp.to_string typ); isProd typ) static_list in
   List.iteri (fun i (id, typ) ->
     add_to_component_bar env context div (i * 50) (mkAbstract (Name id, typ))
   ) static_prod_list
