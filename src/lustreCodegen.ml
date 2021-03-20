@@ -24,15 +24,32 @@ let encode_node_declare dec =
     ; ("returns", list encode_declare_unit dec.returns)
     ; ("vars", list encode_declare_unit dec.vars) ]
 
-let unit_to_string c =
+let rec unit_to_string c =
   match c with
   | Const (n, _) -> Constant.label n |> Label.to_string
   | Var id -> Id.to_string id
   | Int i -> string_of_int i
   | Ind ((n, _), _) -> MutInd.label n |> Label.to_string
+  | Prod _ -> prod_to_string c
   | _ ->
-      Js.log c ;
+      Js.log (MiniCic.Pp.to_string c) ;
       assert false
+  and prod_to_string typ =
+    let _params, c = Aux.collect_type_params typ in
+    let _params = Array.fold_left (fun acc (n, t) ->
+      let sep = if acc = "" then "" else "; " in
+      acc ^ sep ^ n ^ ":" ^ (unit_to_string t)
+      ) "" _params
+    in
+    let params = "(" ^ _params ^ ")" in
+    let _outputs = Aux.collect_prod_outputs c in
+    let _outputs = Array.fold_left (fun acc (n, t) ->
+      let sep = if acc = "" then "" else "; " in
+      acc ^ sep ^ (Aux.get_id_of_name n) ^ ":" ^ (unit_to_string t)
+      ) "" _outputs
+    in
+    let outputs = "(" ^ _outputs ^ ")" in
+    params ^ " returns " ^ outputs
 
 let sort_static env statics =
   let open MiniCic.Constr in
@@ -101,6 +118,7 @@ let generate_expr env c =
   in
   let rec aux c =
     let open! Json.Encode in
+              Js.log (MiniCic.Pp.to_string c);
     match c with
     | App (op, args) -> (
       try
@@ -111,7 +129,8 @@ let generate_expr env c =
         let args = Array.map aux args in
         let args =
           match op with
-          | Const (const, _) ->
+          | Const (const, _) when (not (is_const_fst op)) && (not (is_const_snd op)) ->
+              Js.log env;
               let info = MiniCic.Env.lookup_constant env const in
               Array.mapi
                 (fun i arg ->

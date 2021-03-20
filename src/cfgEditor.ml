@@ -53,6 +53,7 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
         in
         Some (mk_path node_name entry.info.(idx) true)
     | App (c, l) when isVar c ->
+        Js.log (MiniCic.Pp.to_string e);
         let inputs = Array.map (fun c -> aux input_map 0 c) l in
         let id = get_id_of_var c in
         let entry = MiniCic.Env.lookup_named id env in
@@ -312,7 +313,7 @@ let _generate_env_from_node_map node_map default_env =
             let app_args = Array.sub args 1 app_args_len in
             let typ = Lambda (Anonymous, bool_type, output_type) in
             (Case (ci, typ, args.(0), app_args), env)
-        | _ -> assert false
+        | _ -> Js.log (MiniCic.Pp.to_string n.src); assert false
       in
       let () = Hashtbl.add cache n.name body in
       (body, env)

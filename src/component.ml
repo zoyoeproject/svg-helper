@@ -3,26 +3,16 @@ open NodeShape
 open MiniCic.CoreType
 open MiniCic.Names
 open MiniCic.Constr
-
-let get_id_of_name n =
-  match n with Name.Name id -> Id.to_string id | _ -> assert false
+open Aux
 
 let collect_prod_output_names c =
-  MiniCic.Prod.type_list_of_tuple_type c
-  |> Array.of_list
-  |> Array.map (fun t ->
-    match t with
-    | Abstract (n, _) -> n
-    | _ -> Name.mk_name "anon"
-  )
+  Array.map fst (Aux.collect_prod_outputs c)
 
 let collect_prod_outputs name_list c =
-  MiniCic.Prod.type_list_of_tuple_type c
-  |> Array.of_list
-  |> Array.mapi (fun i t ->
-    match t with
-    | Abstract (n, c) -> n, c
-    | _ -> (name_list.(i), t)
+  Aux.collect_prod_outputs c
+  |> Array.mapi (fun i (n, t) ->
+    let n = if Array.length name_list > i then name_list.(i) else n in
+    n, t
   )
 
 let collect_constant_outputs entry c =
@@ -30,15 +20,12 @@ let collect_constant_outputs entry c =
   collect_prod_outputs entry.info c
 
 let collect_type_params typ =
-  let rec aux acc c =
-    match c with
-    | MiniCic.Constr.Prod (n, t, c) ->
-        let acc = { para_info = (get_id_of_name n, t); input = None } :: acc in
-        aux acc c
-    | _ -> (acc, c)
+  let params, c = Aux.collect_type_params typ in
+  let params = Array.map (fun (n, t) ->
+    { para_info = (n, t); input = None }
+  ) params
   in
-  let acc, c = aux [] typ in
-  (Array.of_list acc, c)
+  params, c
 
 let collect_type_output_names typ =
   let _, c = collect_type_params typ in
