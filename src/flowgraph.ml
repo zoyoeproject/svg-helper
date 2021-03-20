@@ -65,7 +65,7 @@ let init_flowgraph env context svgele =
           match creator with
           | CreatorNode c ->
               let node =
-                Component.node_constr_to_node env c (Context.new_ssa context)
+                Component.creator_node_to_node env c (Context.new_ssa context)
               in
               add_node context node Document.(e.offsetX, e.offsetY)
           | CreatorVar ->

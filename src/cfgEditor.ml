@@ -57,8 +57,8 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
         let id = get_id_of_var c in
         let entry = MiniCic.Env.lookup_named id env in
         let typ = match entry with
-        | LocalAssum (id, typ) -> typ
-        | LocalDef (id, body, typ) -> typ
+        | LocalAssum (_, typ) -> typ
+        | LocalDef (_, _, typ) -> typ
         in
         let node_name =
           match ConstrMap.find_opt e !constr_map with
@@ -105,17 +105,12 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
     | _ -> (* FIXME: This is not right *)
         Js.log (MiniCic.Pp.to_string e);
         assert false
-  (* fold_with_full_binders push_local_def aux input_map 0 c*)
-  and push_local_def c input_map =
-    match c with
-    | LocalDef (_, _, _) -> input_map
-    | LocalAssum (_, _) -> input_map
   in
   let inputs =
     Id.Map.fold
       (fun _ v inputs ->
         match v with
-        | LocalAssum (id, t) ->
+        | LocalAssum (id, t) when not (isProd t) ->
             let name = Id.to_string id in
             let ret_name = Name.mk_name id in
             (* maybe error of cic-parser *)
@@ -130,7 +125,8 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
             ctxt.nodes
             <- Context.NodeMap.add name (mk_graph_node input) ctxt.nodes ;
             Id.Map.add id (Some (mk_path name ret_name true)) inputs
-        | LocalDef _ -> (* local var or retrun var *) inputs )
+        | _ -> inputs
+      )
       env.env_named_context Id.Map.empty
   in
   Id.Map.iter
@@ -341,18 +337,8 @@ let build_cfg prompt parse_type parse_expr tool_div param_div parent_div env =
   let graph = DagreFFI.create_graph () in
   Context.init_layout graph ctxt.nodes ;
   Flowgraph.init_flowgraph env ctxt parent_div ;
-  let constant_map =
-    MiniCic.Env.fold_constants
-      (fun c e acc -> Component.add_constant acc (c, e))
-      (Component.mk_constant_map ())
-      env
-  in
-  let ind_map =
-    MiniCic.Env.fold_minds
-      (fun c e acc -> Component.add_ind acc (c, e))
-      (Component.mk_ind_map ()) env
-  in
-  Component.init_component_bar env ctxt tool_div constant_map ind_map
+  Component.init_component_bar env ctxt tool_div;
+  Component.init_implicit_bar env ctxt param_div
 
 let codegen_from_ctx () =
   let ctxt = Context.get_global_context () in

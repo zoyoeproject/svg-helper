@@ -3,18 +3,8 @@ open NodeShape
 open MiniCic.CoreType
 open MiniCic.Names
 open MiniCic.Constr
-module ConstantMap = Map.Make (Constant)
-module IndMap = Map.Make (MutInd)
 
-let mk_constant_map () = ConstantMap.empty
-
-let mk_ind_map () = IndMap.empty
-
-let add_constant constant_map (n, c) = ConstantMap.add n c constant_map
-
-let add_ind ind_map (n, c) = IndMap.add n c ind_map
-
-let get_name n =
+let get_id_of_name n =
   match n with Name.Name id -> Id.to_string id | _ -> assert false
 
 let collect_prod_output_names c =
@@ -22,7 +12,7 @@ let collect_prod_output_names c =
   |> Array.of_list
   |> Array.map (fun t ->
     match t with
-    | Abstract (n, c) -> n
+    | Abstract (n, _) -> n
     | _ -> Name.mk_name "anon"
   )
 
@@ -43,7 +33,7 @@ let collect_type_params typ =
   let rec aux acc c =
     match c with
     | MiniCic.Constr.Prod (n, t, c) ->
-        let acc = { para_info = (get_name n, t); input = None } :: acc in
+        let acc = { para_info = (get_id_of_name n, t); input = None } :: acc in
         aux acc c
     | _ -> (acc, c)
   in
@@ -106,28 +96,40 @@ let var_to_node (id, typ) node_name category =
   in
   Node.mk_node node_name (mkVar id) inputs [| (Name.Name id, typ) |] category
 
-let node_constr_to_node env c node_name =
+let creator_node_to_node env c node_name =
   match c with
   | Const (c, _) ->
       let entry = MiniCic.Env.lookup_constant env c in
       constant_to_node (c, entry) node_name CategoryFunction
   | Ind (ind, _) -> ind_to_node env ind node_name CategoryCase
-  | _ -> assert false
+  | Abstract (id, typ) ->
+      type_to_node (get_id_of_name id) typ node_name CategoryFunction
+  | _ -> Js.log (MiniCic.Pp.to_string c); assert false
 
 let var_constr_to_node c node_name typ category =
   match c with
   | Var id -> var_to_node (id, typ) node_name category
-  | _ -> assert false
+  | _ -> Js.log (MiniCic.Pp.to_string c); assert false
+
+let constr_to_node_in_toolbox env c =
+  match c with
+  | Var id ->
+    var_to_node (id, (Int 0)) "" CategoryToolBox
+  | Const (c, _) ->
+    let entry = MiniCic.Env.lookup_constant env c in
+    constant_to_node (c, entry) "" CategoryToolBox
+  | Ind (ind, _) ->
+    ind_to_node env ind "" CategoryToolBox
+  | Abstract (id, typ) when isProd typ ->
+    type_to_node (get_id_of_name id) typ "" CategoryToolBox
+  | _ ->
+    Js.log (MiniCic.Pp.to_string c);
+    assert false
 
 let input_node c =
   Node.mk_node "input__unique" c [||]
     [| (Name.Anonymous, int_type) |]
     Node.CategoryToolBox
-
-type component_bar = {
-  container : Document.element;
-  components : Node.t ConstantMap.t;
-}
 
 let _set_input_ancher context node_name input item =
   Utils.on_mousedoubleclick_set item (fun _ ->
@@ -301,57 +303,62 @@ let draw_node_as_tool context parent node =
     NodeShape.draw_normal context parent node center sz true set_input_ancher
       set_output_ancher
 
-let add_to_component_bar context parent shift c =
+let constr_to_creator c =
+  let open Context in
+  match c with
+  | Var _ -> CreatorVar
+  | Abstract _
+  | Const _
+  | Ind _ -> CreatorNode c
+  | _ -> Js.log (MiniCic.Pp.to_string c); assert false
+
+let add_to_component_bar env context parent shift c =
   (* MiniCic.Constr.Int 0 is a placeholder, it is useless *)
-  let node = var_constr_to_node c "" (Int 0) Node.CategoryToolBox in
+  let creator = constr_to_creator c in
+  let node = constr_to_node_in_toolbox env c in
   let node_ele = Utils.mk_group_in parent None "" in
   draw_node_as_tool context node_ele node;
   Document.setAttribute node_ele "class" "default";
-  Utils.set_translate_matrix parent node_ele (!shift, 0);
+  Utils.set_translate_matrix parent node_ele (shift, 0);
   Utils.on_mouseclick_set node_ele (fun _ ->
-      if Context.toggle_focus context (Create (node_ele, CreatorVar)) then
+      if Context.toggle_focus context (Create (node_ele, creator)) then
         Utils.set_cfg_cursor context.cfg_ele (Document.outerHTML node_ele)
-      else Utils.restore_cfg_cursor context.cfg_ele);
-  shift := !shift + 40
+      else Utils.restore_cfg_cursor context.cfg_ele)
 
-let init_component_bar env context parent contant_map ind_map =
+let init_component_bar env context parent =
   let open MiniCic.Mind in
   let shift = ref 0 in
-  ConstantMap.iter
-    (fun k entry ->
-      let node = constant_to_node (k, entry) "" Node.CategoryToolBox in
-      let node_ele = Utils.mk_group_in parent None "" in
-      draw_node_as_tool context node_ele node;
-      Document.setAttribute node_ele "class" "default";
-      Utils.set_translate_matrix parent node_ele (!shift, 0);
-      Utils.on_mouseclick_set node_ele (fun _ ->
-          if
-            Context.toggle_focus context
-              (Create (node_ele, CreatorNode (mkConst k)))
-          then
-            Utils.set_cfg_cursor context.cfg_ele (Document.outerHTML node_ele)
-          else Utils.restore_cfg_cursor context.cfg_ele);
-      shift := !shift + 50)
-    contant_map;
-  IndMap.iter
-    (fun k (entry : inductive_block) ->
-      Array.iteri
-        (fun idx _ ->
-          let node = ind_to_node env (k, idx) "" Node.CategoryToolBox in
-          let node_ele = Utils.mk_group_in parent None "" in
-          draw_node_as_tool context node_ele node;
-          Document.setAttribute node_ele "class" "default";
-          Utils.set_translate_matrix parent node_ele (!shift, 0);
-          Utils.on_mouseclick_set node_ele (fun _ ->
-              (* FIXME: It seems the 3rd param of Create is useless, use Int 0 for placeholder. *)
-              if
-                Context.toggle_focus context
-                  (Create (node_ele, CreatorNode (mkInd (k, idx))))
-              then
-                Utils.set_cfg_cursor context.cfg_ele
-                  (Document.outerHTML node_ele)
-              else Utils.restore_cfg_cursor context.cfg_ele);
-          shift := !shift + 50)
-        entry.cells)
-    ind_map;
-  add_to_component_bar context parent shift (mkVar (Id.to_string "var"))
+  let () =
+    MiniCic.Env.fold_constants
+      (fun k _ () ->
+        add_to_component_bar env context parent !shift (mkConst k);
+        shift := !shift + 50)
+      ()
+      env
+  in
+  let () =
+    MiniCic.Env.fold_minds
+      (fun k entry () ->
+        Array.iteri
+          (fun idx _ ->
+            add_to_component_bar env context parent !shift (mkInd (k, idx));
+            shift := !shift + 50
+          )
+          entry.cells
+      ) () env
+  in
+  add_to_component_bar env context parent !shift (mkVar (Id.to_string "var"))
+
+let init_implicit_bar env context div =
+  let open MiniCic.Env in
+  let () = Document.setInnerHTML div "" in
+  let static_map = env.env_static in
+  let static_list = List.map (fun id ->
+      match lookup_named id env with
+      | LocalDef (id, _, typ) -> id, typ
+      | LocalAssum (id, typ) -> id, typ
+  ) (Id.Set.elements static_map) in
+  let static_prod_list = List.filter (fun (_, typ) -> isProd typ) static_list in
+  List.iteri (fun i (id, typ) ->
+    add_to_component_bar env context div (i * 50) (mkAbstract (Name id, typ))
+  ) static_prod_list
