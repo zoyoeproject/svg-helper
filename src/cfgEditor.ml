@@ -74,7 +74,8 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
         Some (mk_path node_name ret_name true)
     | Const _ -> Some (mk_var e)
     | _ -> (* FIXME: This is not right *)
-           assert false
+        Js.log (MiniCic.Pp.to_string e);
+        assert false
   (* fold_with_full_binders push_local_def aux input_map 0 c*)
   and push_local_def c input_map =
     match c with
