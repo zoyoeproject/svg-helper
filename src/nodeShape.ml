@@ -5,13 +5,15 @@ open MiniCic.Names
 
 let input_padding = 3
 
-let print_var = function
+let print_var c =
+  match c with
   | Var id -> Id.to_string id
   | Const (c, _) -> Constant.to_string c
   | Int i -> string_of_int i
   | App (Const (c, _), [||]) -> Constant.to_string c
+  | App (Var c, [||]) -> Id.to_string c
   | Case (ci, _, _, _) -> "case-" ^ MiniCic.Names.KerName.label (fst ci.ci_ind)
-  | _ -> assert false
+  | _ -> Js.log (MiniCic.Pp.to_string c); assert false
 
 let draw_edges (nodes : node_map) =
   NodeMap.fold

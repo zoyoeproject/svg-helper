@@ -12,6 +12,11 @@ let c_case =
 
 module ConstrMap = Map.Make (MiniCic.Constr)
 
+let get_id_of_var c =
+  match c with
+  | Var id -> id
+  | _ -> assert false
+
 let generate_context_from_env prompt parse_type parse_expr param_div parent_div env =
   Js.log "build_cfg..." ;
   let constr_map = ref ConstrMap.empty in
@@ -47,6 +52,30 @@ let generate_context_from_env prompt parse_type parse_expr param_div parent_div 
               node_name
         in
         Some (mk_path node_name entry.info.(idx) true)
+    | App (c, l) when isVar c ->
+        let inputs = Array.map (fun c -> aux input_map 0 c) l in
+        let id = get_id_of_var c in
+        let entry = MiniCic.Env.lookup_named id env in
+        let typ = match entry with
+        | LocalAssum (id, typ) -> typ
+        | LocalDef (id, body, typ) -> typ
+        in
+        let node_name =
+          match ConstrMap.find_opt e !constr_map with
+          | Some name -> name
+          | None ->
+              let node_name = Context.new_ssa ctxt in
+              let node =
+                Component.type_to_node_with_params id typ node_name
+                  Node.CategoryFunction inputs
+              in
+              ctxt.nodes
+              <- Context.NodeMap.add node_name (mk_graph_node node) ctxt.nodes ;
+              constr_map := ConstrMap.add e node_name !constr_map ;
+              node_name
+        in
+        let names = Component.collect_type_output_names typ in
+        Some (mk_path node_name names.(idx) true)
     | Int _ -> Some (mk_var e)
     | Var name -> (
         let name_info = MiniCic.Env.lookup_named name env in

@@ -17,14 +17,29 @@ let add_ind ind_map (n, c) = IndMap.add n c ind_map
 let get_name n =
   match n with Name.Name id -> Id.to_string id | _ -> assert false
 
-let collect_constant_outputs entry c =
-  let open MiniCic.Env in
+let collect_prod_output_names c =
   MiniCic.Prod.type_list_of_tuple_type c
   |> Array.of_list
-  |> Array.mapi (fun i t -> (entry.info.(i), t))
+  |> Array.map (fun t ->
+    match t with
+    | Abstract (n, c) -> n
+    | _ -> Name.mk_name "anon"
+  )
 
-let collect_constant_params entry =
+let collect_prod_outputs name_list c =
+  MiniCic.Prod.type_list_of_tuple_type c
+  |> Array.of_list
+  |> Array.mapi (fun i t ->
+    match t with
+    | Abstract (n, c) -> n, c
+    | _ -> (name_list.(i), t)
+  )
+
+let collect_constant_outputs entry c =
   let open MiniCic.Env in
+  collect_prod_outputs entry.info c
+
+let collect_type_params typ =
   let rec aux acc c =
     match c with
     | MiniCic.Constr.Prod (n, t, c) ->
@@ -32,8 +47,16 @@ let collect_constant_params entry =
         aux acc c
     | _ -> (acc, c)
   in
-  let acc, c = aux [] entry.entry_type in
+  let acc, c = aux [] typ in
   (Array.of_list acc, c)
+
+let collect_type_output_names typ =
+  let _, c = collect_type_params typ in
+  collect_prod_output_names c
+
+let collect_constant_params entry =
+  let open MiniCic.Env in
+  collect_type_params entry.entry_type
 
 let constant_to_node (c, entry) node_name category =
   let args, output_typ = collect_constant_params entry in
@@ -42,6 +65,16 @@ let constant_to_node (c, entry) node_name category =
 
 let constant_to_node_with_params (c, entry) node_name category params =
   let node = constant_to_node (c, entry) node_name category in
+  Array.iteri (fun i input -> input.input <- params.(i)) node.inputs;
+  node
+
+let type_to_node id typ node_name category =
+  let args, output_typ = collect_type_params typ in
+  let outputs = collect_prod_outputs [||] output_typ in
+  Node.mk_node node_name (App (mkVar id, [||])) args outputs category
+
+let type_to_node_with_params id typ node_name category params =
+  let node = type_to_node id typ node_name category in
   Array.iteri (fun i input -> input.input <- params.(i)) node.inputs;
   node
 
